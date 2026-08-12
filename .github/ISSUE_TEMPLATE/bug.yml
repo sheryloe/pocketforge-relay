@@ -1,0 +1,21 @@
+name: Bug report
+description: Report a reproducible defect that is not a security vulnerability.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not disclose vulnerabilities here. Follow SECURITY.md.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include source type, preset, OS, Node version, and minimal steps.
+    validations:
+      required: true

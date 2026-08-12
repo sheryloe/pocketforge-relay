@@ -1,0 +1,18 @@
+schema_version: 1
+project:
+  name: PocketForge Relay
+  repository_slug: pocketforge-relay
+  maturity: working-mvp
+  category: [mobile-first-developer-infrastructure, self-hosted-build-control-plane, agent-ready-orchestration]
+  thesis: A phone should command the full development loop rather than imitate a desktop IDE.
+  core_loop: [request, checkout, execute, stream, artifact, verify, iterate]
+mvp:
+  implemented: [mobile-pwa, bearer-auth, bundled-demo, public-github-checkout, fixed-presets, sse-log-stream, artifact-download, per-job-workspace, bounded-execution]
+  not_implemented: [hardened-sandbox, private-repository-auth, ai-agent-adapters, device-feedback, multi-user-rbac]
+invariants:
+  - user_input_must_not_become_arbitrary_shell_code
+  - each_job_uses_a_distinct_workspace
+  - secrets_must_not_enter_logs_or_artifacts
+  - execution_capabilities_are_allowlisted
+extension_points: [source_adapter, runner_adapter, agent_adapter, artifact_adapter, device_adapter, policy_adapter]
+license: Apache-2.0

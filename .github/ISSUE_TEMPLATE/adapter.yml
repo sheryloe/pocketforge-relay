@@ -1,0 +1,24 @@
+name: Adapter proposal
+description: Propose a source, runner, agent, artifact, policy, or device adapter.
+title: "adapter: "
+labels: [adapter, design]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Adapter kind
+      options: [Source, Runner, Agent, Artifact, Policy, Device]
+    validations:
+      required: true
+  - type: textarea
+    id: user
+    attributes:
+      label: User problem
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Trust and security impact
+    validations:
+      required: true
