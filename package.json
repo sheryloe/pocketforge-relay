@@ -1,0 +1,31 @@
+{
+  "name": "pocketforge-relay",
+  "version": "0.1.0",
+  "description": "An open, mobile-first control plane for the code to build to artifact to verify loop.",
+  "type": "module",
+  "private": false,
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check src/http-app.mjs && node --check src/job-manager.mjs && node --check src/process-runner.mjs && node --check src/presets.mjs && node --check src/security.mjs && node --check src/artifacts.mjs && node --check src/config.mjs && node --check public/app.js",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sheryloe/pocketforge-relay.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sheryloe/pocketforge-relay/issues"
+  },
+  "homepage": "https://github.com/sheryloe/pocketforge-relay#readme",
+  "keywords": [
+    "mobile-development",
+    "build-runner",
+    "self-hosted",
+    "developer-tools",
+    "pwa"
+  ]
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080d18" />
+  <meta name="description" content="PocketForge Relay mobile development control plane" />
+  <title>PocketForge Relay</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><img src="/icon.svg" alt="" width="40" height="40"><span><strong>PocketForge Relay</strong><small>mobile development control plane</small></span></a>
+  <div id="serverStatus" class="server-status" data-state="checking"><i></i><span>Checking relay</span></div>
+</header>
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">WORKING MVP · v0.1.0</p>
+    <h1>Carry the control plane.<br><span>Leave the workstation behind.</span></h1>
+    <p>Start a build from your phone, watch each step, and retrieve the result from the compute environment suited to run it.</p>
+    <div class="loop"><b>Request</b> → <b>Checkout</b> → <b>Build</b> → <b>Artifact</b> → <b>Verify</b></div>
+  </section>
+
+  <section class="form-grid">
+    <article class="panel">
+      <div class="heading"><div><small>01 · CONNECT</small><h2>Pair with this relay</h2></div><em>Bearer token</em></div>
+      <label>Relay token<div class="inline"><input id="tokenInput" type="password" placeholder="Token printed by the runner"><button id="connectButton" type="button" class="secondary">Connect</button></div><span>Stored in this browser tab only.</span></label>
+      <p id="connectionMessage" class="message"></p>
+    </article>
+
+    <article class="panel">
+      <div class="heading"><div><small>02 · LAUNCH</small><h2>Start a build job</h2></div><em>Preset-only</em></div>
+      <form id="jobForm">
+        <div class="segmented"><button type="button" class="segment active" data-source="demo">Bundled demo</button><button type="button" class="segment" data-source="github">Public GitHub</button></div>
+        <label>Job label <span>optional</span><input id="labelInput" maxlength="80" placeholder="Mobile smoke build"></label>
+        <div id="githubFields" class="github-fields" hidden>
+          <label>Repository URL<input id="repositoryInput" placeholder="https://github.com/owner/repository"></label>
+          <label>Branch or tag<input id="refInput" value="main"></label>
+        </div>
+        <label>Build preset<select id="presetSelect"></select><span id="presetDescription">Connect to load presets.</span></label>
+        <button id="launchButton" type="submit" class="primary" disabled>Launch build loop</button>
+      </form>
+      <p id="launchMessage" class="message"></p>
+    </article>
+  </section>
+
+  <section class="work-grid">
+    <article class="panel jobs-panel">
+      <div class="heading"><div><small>03 · OBSERVE</small><h2>Recent jobs</h2></div><button id="refreshButton" class="square" type="button">↻</button></div>
+      <div id="jobsEmpty" class="empty">◇<p>No jobs yet. The bundled demo takes only a moment.</p></div>
+      <div id="jobsList" class="jobs"></div>
+    </article>
+    <article class="panel console-panel">
+      <div class="heading"><div><small>LIVE JOB</small><h2 id="activeJobTitle">Select a job</h2></div><div class="actions"><em id="activeJobStatus" class="status neutral">idle</em><button id="cancelButton" type="button" class="danger" hidden>Cancel</button></div></div>
+      <div id="jobMeta" class="meta"></div>
+      <div id="logConsole" class="console"><p>Build output will stream here. No desktop-shaped theater, just the useful signals.</p></div>
+      <div class="heading artifacts-title"><div><small>04 · RETRIEVE</small><h3>Artifacts</h3></div><em id="artifactCount">0 files</em></div>
+      <div id="artifactsList" class="artifacts"><p>Artifacts appear after a job completes.</p></div>
+    </article>
+  </section>
+  <aside><strong>MVP boundary</strong><span>This release proves the mobile orchestration spine. It is not yet a hardened container sandbox. Run trusted public repositories only.</span></aside>
+</main>
+<footer><span>PocketForge Relay · Apache-2.0</span><span>The phone commands the loop. Compute happens where it belongs.</span></footer>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

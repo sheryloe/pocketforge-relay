@@ -1,0 +1,1 @@
+{"name":"PocketForge Relay","short_name":"PocketForge","description":"A mobile-first control plane for trusted build jobs.","start_url":"/","display":"standalone","background_color":"#070a12","theme_color":"#080d18","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
