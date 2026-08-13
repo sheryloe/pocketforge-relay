@@ -3,7 +3,7 @@ import path from 'node:path';
 const MIME = new Map([['.apk','application/vnd.android.package-archive'],['.aab','application/octet-stream'],['.html','text/html; charset=utf-8'],['.css','text/css; charset=utf-8'],['.js','text/javascript; charset=utf-8'],['.mjs','text/javascript; charset=utf-8'],['.json','application/json; charset=utf-8'],['.txt','text/plain; charset=utf-8'],['.svg','image/svg+xml'],['.png','image/png'],['.wasm','application/wasm'],['.zip','application/zip']]);
 export async function writeBuildSummary(job, sourceDir, finalStatus = job.status) {
   const dir = path.join(sourceDir, '.pocketforge-result'); await fs.mkdir(dir, { recursive: true });
-  const summary = { schemaVersion: 1, jobId: job.id, label: job.label, sourceType: job.sourceType, repository: job.repository, ref: job.ref, preset: job.presetId, status: finalStatus, createdAt: job.createdAt, startedAt: job.startedAt, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
+  const summary = { schemaVersion: 1, jobId: job.id, label: job.label, sourceType: job.sourceType, repository: job.repository, ref: job.ref, resolvedCommit: job.resolvedCommit, preset: job.presetId, status: finalStatus, createdAt: job.createdAt, startedAt: job.startedAt, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
   await fs.writeFile(path.join(dir, 'build-summary.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
 }
 export async function collectArtifacts({ sourceDir, preset, maxFiles, maxBytes }) {

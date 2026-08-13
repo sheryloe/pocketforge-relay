@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check src/http-app.mjs && node --check src/job-manager.mjs && node --check src/process-runner.mjs && node --check src/presets.mjs && node --check src/security.mjs && node --check src/artifacts.mjs && node --check src/config.mjs && node --check public/app.js",
+    "check": "node --check server.mjs && node --check src/graceful-shutdown.mjs && node --check src/http-app.mjs && node --check src/job-manager.mjs && node --check src/process-runner.mjs && node --check src/presets.mjs && node --check src/security.mjs && node --check src/artifacts.mjs && node --check src/config.mjs && node --check src/action-targets.mjs && node --check src/github-actions-client.mjs && node --check src/github-actions-runner.mjs && node --check src/action-run-manager.mjs && node --check src/android-device-adapter.mjs && node --check src/device-actions.mjs && node --check src/device-action-runtime.mjs && node --check public/locales.js && node --check public/app.js",
     "test": "node --test"
   },
   "repository": {

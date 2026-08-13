@@ -34,6 +34,23 @@ export function tokenMatches(expected, header) {
   const a = Buffer.from(expected); const b = Buffer.from(supplied);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+
+const SECRET_ASSIGNMENT = /((?:^|[\s,{])["']?[A-Za-z0-9_-]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;}\]]+)/gi;
+const AUTHORIZATION_VALUE = /(\b(?:authorization|proxy-authorization)["']?\s*[:=]\s*["']?\s*(?:bearer|basic)\s+)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s"',;}\]]+)/gi;
+const RECOGNIZED_TOKEN = /\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,})\b/g;
+
+export function createLogRedactor(secrets = []) {
+  const exact = [...new Set(secrets.map(value => String(value ?? '')).filter(value => value.length >= 8))]
+    .sort((a, b) => b.length - a.length);
+  return (message) => {
+    let redacted = String(message ?? '');
+    for (const secret of exact) redacted = redacted.replaceAll(secret, '[REDACTED]');
+    return redacted
+      .replace(AUTHORIZATION_VALUE, '$1[REDACTED]')
+      .replace(SECRET_ASSIGNMENT, '$1[REDACTED]')
+      .replace(RECOGNIZED_TOKEN, '[REDACTED]');
+  };
+}
 export function safeStaticPath(publicDir, requestPath) {
   let decoded; try { decoded = decodeURIComponent(requestPath); } catch { return null; }
   const relative = decoded === '/' ? 'index.html' : decoded.replace(/^\/+/, '');

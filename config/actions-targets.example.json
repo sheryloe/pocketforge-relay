@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    {
+      "id": "android-debug",
+      "name": "Android debug APK",
+      "repository": "https://github.com/example/mobile-app",
+      "workflow": "pocketforge-android.yml",
+      "refs": [
+        "main"
+      ],
+      "inputs": {
+        "variant": "debug"
+      },
+      "artifactNames": [
+        "app-debug-apk",
+        "device-evidence"
+      ]
+    }
+  ]
+}

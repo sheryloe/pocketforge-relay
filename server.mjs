@@ -1,10 +1,15 @@
 import { loadConfig } from './src/config.mjs';
+import { createActionsRuntime } from './src/action-run-manager.mjs';
 import { createPocketForgeServer } from './src/http-app.mjs';
 import { JobManager } from './src/job-manager.mjs';
+import { createDeviceActionRuntime } from './src/device-action-runtime.mjs';
+import { shutdownRelay } from './src/graceful-shutdown.mjs';
 
 const config = loadConfig();
 const manager = new JobManager(config);
-const server = createPocketForgeServer({ config, manager });
+const actionsManager = await createActionsRuntime(config);
+const deviceActionsRuntime = await createDeviceActionRuntime(config);
+const server = createPocketForgeServer({ config, manager, actionsManager, deviceActionsRuntime });
 
 server.listen(config.port, config.host, () => {
   const shownHost = config.host === '0.0.0.0' ? '<this-machine-ip>' : config.host;
@@ -13,24 +18,21 @@ server.listen(config.port, config.host, () => {
     console.log('Generated a temporary bearer token for this process:');
     console.log(config.token);
   }
+  if (actionsManager) console.log(`GitHub Actions adapter enabled for ${actionsManager.listTargets().length} target(s).`);
+  if (deviceActionsRuntime) console.log('Android device actions enabled.');
 });
 
 let stopping = false;
-function shutdown(signal) {
+async function shutdown(signal) {
   if (stopping) return;
   stopping = true;
   console.log(`Received ${signal}; stopping queued and active jobs.`);
-  manager.shutdown();
-  server.close((error) => {
-    if (error) {
-      console.error(error);
-      process.exitCode = 1;
-    }
-  });
-  setTimeout(() => {
-    console.error('Graceful shutdown timed out.');
-    process.exit(1);
-  }, 10_000).unref();
+  try {
+    await shutdownRelay({ server, managers: [manager, actionsManager, deviceActionsRuntime] });
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  }
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));

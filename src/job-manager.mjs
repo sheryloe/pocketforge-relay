@@ -5,54 +5,328 @@ import { EventEmitter } from 'node:events';
 import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
-import { normalizeGitHubRepository, validateGitRef, validateLabel } from './security.mjs';
-const FINAL = new Set(['succeeded','failed','cancelled']);
+import { createLogRedactor, normalizeGitHubRepository, validateGitRef, validateLabel } from './security.mjs';
+
+const FINAL = new Set(['succeeded', 'failed', 'cancelled']);
+
 export class JobManager {
-  constructor(config) { this.config = config; this.jobs = new Map(); this.queue = []; this.activeCount = 0; this.stopped = false; }
+  constructor(config) {
+    this.config = config;
+    this.jobs = new Map();
+    this.queue = [];
+    this.activeCount = 0;
+    this.stopped = false;
+    this.shutdownPromise = null;
+    this.idleWaiters = new Set();
+    this.finishedSequence = 0;
+    this.redactLog = createLogRedactor([config.token]);
+  }
+
   createJob(input = {}) {
-    if (this.stopped) throw new Error('Runner is shutting down.');
+    if (this.stopped) throw statusError('Runner is shutting down.', 503);
+    this.pruneRetainedJobs();
+    if (this.queue.length >= (this.config.maxQueuedJobs ?? 20)) {
+      throw statusError('Job queue is full. Try again after a queued job starts.', 429);
+    }
     const sourceType = input.sourceType === 'github' ? 'github' : input.sourceType === 'demo' ? 'demo' : null;
     if (!sourceType) throw new Error('sourceType must be either demo or github.');
-    const preset = getPreset(String(input.presetId || '')); assertPresetSupportsSource(preset, sourceType);
-    const job = { id: crypto.randomUUID(), label: validateLabel(input.label), sourceType, repository: sourceType === 'github' ? normalizeGitHubRepository(input.repository) : null, ref: sourceType === 'github' ? validateGitRef(input.ref) : null, presetId: preset.id, presetName: preset.name, status: 'queued', createdAt: new Date().toISOString(), startedAt: null, finishedAt: null, exitCode: null, error: null, currentStep: null, workspace: null, sourceDir: null, logs: [], artifacts: [], eventSequence: 0, events: new EventEmitter(), controller: new AbortController() };
-    this.jobs.set(job.id, job); this.queue.push(job.id); this.emit(job, { type: 'status', status: 'queued' }); this.pump(); return this.publicJob(job);
+    const preset = getPreset(String(input.presetId || ''));
+    assertPresetSupportsSource(preset, sourceType);
+    const job = {
+      id: crypto.randomUUID(),
+      label: validateLabel(input.label),
+      sourceType,
+      repository: sourceType === 'github' ? normalizeGitHubRepository(input.repository) : null,
+      ref: sourceType === 'github' ? validateGitRef(input.ref) : null,
+      resolvedCommit: null,
+      presetId: preset.id,
+      presetName: preset.name,
+      status: 'queued',
+      createdAt: new Date().toISOString(),
+      startedAt: null,
+      finishedAt: null,
+      exitCode: null,
+      error: null,
+      currentStep: null,
+      workspace: null,
+      sourceDir: null,
+      logs: [],
+      artifacts: [],
+      eventSequence: 0,
+      events: new EventEmitter(),
+      controller: new AbortController(),
+    };
+    this.jobs.set(job.id, job);
+    this.queue.push(job.id);
+    this.emit(job, { type: 'status', status: 'queued' });
+    this.pump();
+    return this.publicJob(job);
   }
-  listJobs() { return [...this.jobs.values()].sort((a,b) => b.createdAt.localeCompare(a.createdAt)).map(j => this.publicJob(j)); }
-  getJob(id) { const j = this.jobs.get(id); return j ? this.publicJob(j) : null; }
-  getArtifact(id, artifactId) { return this.jobs.get(id)?.artifacts.find(a => a.id === String(artifactId)) || null; }
-  subscribe(id, listener) { const j = this.jobs.get(id); if (!j) return null; j.events.on('event', listener); return () => j.events.off('event', listener); }
-  cancelJob(id) { const j = this.jobs.get(id); if (!j) return null; if (FINAL.has(j.status)) return this.publicJob(j); j.controller.abort(); if (j.status === 'queued') { j.error = 'Cancelled before execution.'; j.finishedAt = new Date().toISOString(); this.setStatus(j, 'cancelled'); } return this.publicJob(j); }
-  shutdown() { this.stopped = true; for (const j of this.jobs.values()) if (!FINAL.has(j.status)) j.controller.abort(); }
+
+  listJobs() {
+    return [...this.jobs.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(job => this.publicJob(job));
+  }
+
+  getJob(id) {
+    const job = this.jobs.get(id);
+    return job ? this.publicJob(job) : null;
+  }
+
+  getArtifact(id, artifactId) {
+    return this.jobs.get(id)?.artifacts.find(artifact => artifact.id === String(artifactId)) || null;
+  }
+
+  resolveDeviceArtifact(id, artifactId) {
+    const job = this.jobs.get(String(id));
+    if (!job) throw statusError('Job not found.', 404);
+    if (job.status !== 'succeeded') throw statusError('Device evidence requires a succeeded build job.', 409);
+    const artifact = job.artifacts.find(candidate => candidate.id === String(artifactId));
+    if (!artifact) throw statusError('Artifact not found.', 404);
+    if (artifact.contentType !== 'application/vnd.android.package-archive'
+      || path.extname(artifact.absolutePath).toLowerCase() !== '.apk') {
+      throw statusError('Device evidence requires an APK artifact.', 400);
+    }
+    if (!job.sourceDir || !path.isAbsolute(job.sourceDir) || !path.isAbsolute(artifact.absolutePath)) {
+      throw statusError('Build workspace is unavailable.', 409);
+    }
+    return Object.freeze({
+      jobId: job.id,
+      jobStatus: job.status,
+      repository: job.repository,
+      resolvedCommit: job.resolvedCommit,
+      artifactId: artifact.id,
+      artifactPath: artifact.absolutePath,
+      workspaceRoot: job.sourceDir,
+    });
+  }
+
+  subscribe(id, listener) {
+    const job = this.jobs.get(id);
+    if (!job) return null;
+    job.events.on('event', listener);
+    return () => job.events.off('event', listener);
+  }
+
+  cancelJob(id) {
+    const job = this.jobs.get(id);
+    if (!job) return null;
+    if (FINAL.has(job.status)) return this.publicJob(job);
+    job.controller.abort();
+    if (job.status === 'queued') {
+      this.queue = this.queue.filter(queuedId => queuedId !== job.id);
+      job.error = 'Cancelled before execution.';
+      job.finishedAt = new Date().toISOString();
+      job.finishedSequence = ++this.finishedSequence;
+      this.setStatus(job, 'cancelled');
+      this.emit(job, { type: 'complete', job: this.publicJob(job) });
+      this.pruneRetainedJobs();
+    }
+    return this.publicJob(job);
+  }
+
+  shutdown() {
+    if (this.shutdownPromise) return this.shutdownPromise;
+    this.stopped = true;
+    for (const job of this.jobs.values()) {
+      if (!FINAL.has(job.status)) this.cancelJob(job.id);
+    }
+    this.queue = [];
+    this.shutdownPromise = this.activeCount === 0
+      ? Promise.resolve()
+      : new Promise(resolve => this.idleWaiters.add(resolve));
+    return this.shutdownPromise;
+  }
+
   async pump() {
     if (this.stopped) return;
     while (this.activeCount < this.config.maxConcurrentJobs && this.queue.length) {
-      const id = this.queue.shift(); const j = this.jobs.get(id); if (!j || j.status !== 'queued') continue;
-      this.activeCount++; this.runJob(j).catch(e => this.addLog(j, 'system', `Internal runner error: ${e.stack || e.message}`)).finally(() => { this.activeCount--; this.pump(); });
+      const id = this.queue.shift();
+      const job = this.jobs.get(id);
+      if (!job || job.status !== 'queued') continue;
+      this.activeCount++;
+      this.runJob(job)
+        .catch(error => this.addLog(job, 'system', `Internal runner error: ${safeJobError(error)}`))
+        .finally(() => {
+          this.activeCount--;
+          if (this.activeCount === 0) {
+            for (const resolve of this.idleWaiters) resolve();
+            this.idleWaiters.clear();
+          }
+          this.pump();
+        });
     }
   }
+
   async runJob(job) {
-    const preset = getPreset(job.presetId); const workspace = path.join(this.config.dataDir, 'jobs', job.id); const sourceDir = path.join(workspace, 'source');
-    job.workspace = workspace; job.sourceDir = sourceDir; job.startedAt = new Date().toISOString(); this.setStatus(job, 'preparing');
+    const preset = getPreset(job.presetId);
+    const workspace = path.join(this.config.dataDir, 'jobs', job.id);
+    const sourceDir = path.join(workspace, 'source');
+    job.workspace = workspace;
+    job.sourceDir = sourceDir;
+    job.startedAt = new Date().toISOString();
+    this.setStatus(job, 'preparing');
     let finalStatus = 'failed';
     try {
       await fs.mkdir(workspace, { recursive: true });
-      if (job.sourceType === 'demo') { this.addLog(job, 'system', 'Copying the bundled hello-web project into an isolated job workspace.'); await fs.cp(path.join(this.config.examplesDir, 'hello-web'), sourceDir, { recursive: true }); }
-      else await runProcessStep({ step: { name: 'Clone repository', command: 'git', args: ['clone','--depth','1','--single-branch','--branch',job.ref,job.repository,sourceDir] }, cwd: workspace, timeoutMs: this.config.stepTimeoutMs, signal: job.controller.signal, onLog: (c,m) => this.addLog(job,c,m) });
+      if (job.sourceType === 'demo') {
+        this.addLog(job, 'system', 'Copying the bundled hello-web project into an isolated job workspace.');
+        await fs.cp(path.join(this.config.examplesDir, 'hello-web'), sourceDir, { recursive: true });
+      } else {
+        await runProcessStep({
+          step: { name: 'Clone repository', command: 'git', args: ['clone', '--depth', '1', '--single-branch', '--branch', job.ref, job.repository, 'source'] },
+          cwd: workspace,
+          timeoutMs: this.config.stepTimeoutMs,
+          signal: job.controller.signal,
+          onLog: (channel, message) => this.addLog(job, channel, message),
+        });
+        job.resolvedCommit = await resolveGitCommit({
+          sourceDir,
+          timeoutMs: this.config.stepTimeoutMs,
+          signal: job.controller.signal,
+          onLog: (channel, message) => this.addLog(job, channel, message),
+        });
+      }
       if (job.controller.signal.aborted) throw abortError();
       this.setStatus(job, 'running');
-      for (const step of resolvePresetSteps(preset, sourceDir)) { job.currentStep = step.name; this.emit(job, { type: 'step', currentStep: step.name }); this.addLog(job, 'system', `Starting: ${step.name}`); await runProcessStep({ step, cwd: sourceDir, timeoutMs: this.config.stepTimeoutMs, signal: job.controller.signal, onLog: (c,m) => this.addLog(job,c,m) }); this.addLog(job, 'system', `Completed: ${step.name}`); }
-      job.exitCode = 0; finalStatus = 'succeeded';
-    } catch (e) {
-      if (e?.name === 'AbortError' || job.controller.signal.aborted) { job.error = 'Job cancelled.'; this.addLog(job, 'system', job.error); finalStatus = 'cancelled'; }
-      else { job.exitCode = 1; job.error = e?.message || String(e); this.addLog(job, 'stderr', job.error); finalStatus = 'failed'; }
+      for (const step of resolvePresetSteps(preset, sourceDir)) {
+        job.currentStep = step.name;
+        this.emit(job, { type: 'step', currentStep: step.name });
+        this.addLog(job, 'system', `Starting: ${step.name}`);
+        await runProcessStep({
+          step,
+          cwd: sourceDir,
+          timeoutMs: this.config.stepTimeoutMs,
+          signal: job.controller.signal,
+          onLog: (channel, message) => this.addLog(job, channel, message),
+        });
+        this.addLog(job, 'system', `Completed: ${step.name}`);
+      }
+      job.exitCode = 0;
+      finalStatus = 'succeeded';
+    } catch (error) {
+      if (error?.name === 'AbortError' || job.controller.signal.aborted) {
+        job.error = 'Job cancelled.';
+        this.addLog(job, 'system', job.error);
+        finalStatus = 'cancelled';
+      } else {
+        job.exitCode = 1;
+        job.error = safeJobError(error);
+        this.addLog(job, 'stderr', job.error);
+        finalStatus = 'failed';
+      }
     }
-    job.currentStep = null; job.finishedAt = new Date().toISOString();
-    try { await writeBuildSummary(job, sourceDir, finalStatus); job.artifacts = await collectArtifacts({ sourceDir, preset, maxFiles: this.config.maxArtifactFiles, maxBytes: this.config.maxArtifactBytes }); this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts) }); } catch (e) { this.addLog(job, 'stderr', `Artifact collection failed: ${e.message}`); }
-    this.setStatus(job, finalStatus); this.emit(job, { type: 'complete', job: this.publicJob(job) });
+    job.currentStep = null;
+    job.finishedAt = new Date().toISOString();
+    job.finishedSequence = ++this.finishedSequence;
+    try {
+      await writeBuildSummary(job, sourceDir, finalStatus);
+      job.artifacts = await collectArtifacts({
+        sourceDir,
+        preset,
+        maxFiles: this.config.maxArtifactFiles,
+        maxBytes: this.config.maxArtifactBytes,
+      });
+      this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts) });
+    } catch (error) {
+      this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);
+    }
+    this.setStatus(job, finalStatus);
+    this.emit(job, { type: 'complete', job: this.publicJob(job) });
+    this.pruneRetainedJobs();
   }
-  addLog(job, channel, message) { const entry = { sequence: ++job.eventSequence, timestamp: new Date().toISOString(), channel, message: String(message ?? '').replace(/\u0000/g,'') }; if (!entry.message && channel !== 'system') return; job.logs.push(entry); if (job.logs.length > this.config.maxLogLines) job.logs.splice(0, job.logs.length - this.config.maxLogLines); this.emit(job, { type: 'log', log: entry }); }
-  setStatus(job, status) { job.status = status; this.emit(job, { type: 'status', status, job: this.publicJob(job) }); }
-  emit(job, event) { job.events.emit('event', event); }
-  publicJob(j) { return { id:j.id,label:j.label,sourceType:j.sourceType,repository:j.repository,ref:j.ref,presetId:j.presetId,presetName:j.presetName,status:j.status,createdAt:j.createdAt,startedAt:j.startedAt,finishedAt:j.finishedAt,exitCode:j.exitCode,error:j.error,currentStep:j.currentStep,logs:[...j.logs],artifacts:publicArtifacts(j.artifacts) }; }
+
+  addLog(job, channel, message) {
+    const entry = {
+      sequence: ++job.eventSequence,
+      timestamp: new Date().toISOString(),
+      channel,
+      message: this.redactLog(String(message ?? '').replace(/\u0000/g, '')),
+    };
+    if (!entry.message && channel !== 'system') return;
+    job.logs.push(entry);
+    if (job.logs.length > this.config.maxLogLines) {
+      job.logs.splice(0, job.logs.length - this.config.maxLogLines);
+    }
+    this.emit(job, { type: 'log', log: entry });
+  }
+
+  setStatus(job, status) {
+    job.status = status;
+    this.emit(job, { type: 'status', status, job: this.publicJob(job) });
+  }
+
+  emit(job, event) {
+    job.events.emit('event', event);
+  }
+
+  pruneRetainedJobs() {
+    const retained = this.config.maxRetainedJobs ?? 100;
+    const completed = [...this.jobs.values()]
+      .filter(job => FINAL.has(job.status))
+      .sort((a, b) => b.finishedSequence - a.finishedSequence);
+    for (const job of completed.slice(retained)) {
+      this.jobs.delete(job.id);
+      job.events.removeAllListeners();
+    }
+  }
+
+  publicJob(job) {
+    return {
+      id: job.id,
+      label: job.label,
+      sourceType: job.sourceType,
+      repository: job.repository,
+      ref: job.ref,
+      resolvedCommit: job.resolvedCommit,
+      presetId: job.presetId,
+      presetName: job.presetName,
+      status: job.status,
+      createdAt: job.createdAt,
+      startedAt: job.startedAt,
+      finishedAt: job.finishedAt,
+      exitCode: job.exitCode,
+      error: job.error,
+      currentStep: job.currentStep,
+      logs: [...job.logs],
+      artifacts: publicArtifacts(job.artifacts),
+    };
+  }
 }
-function abortError() { const e = new Error('Job cancelled.'); e.name = 'AbortError'; return e; }
+
+export async function resolveGitCommit({ sourceDir, timeoutMs, signal, onLog, runStep = runProcessStep }) {
+  const stdout = [];
+  await runStep({
+    step: { name: 'Resolve cloned commit', command: 'git', args: ['rev-parse', '--verify', 'HEAD^{commit}'] },
+    cwd: sourceDir,
+    timeoutMs,
+    signal,
+    onLog: (channel, message) => {
+      onLog(channel, message);
+      if (channel === 'stdout') stdout.push(String(message));
+    },
+  });
+  if (stdout.length !== 1 || !/^[a-f0-9]{40}$/i.test(stdout[0].trim())) {
+    throw new Error('Unable to bind the build to one exact Git commit.');
+  }
+  return stdout[0].trim().toLowerCase();
+}
+
+function abortError() {
+  const error = new Error('Job cancelled.');
+  error.name = 'AbortError';
+  return error;
+}
+
+function statusError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function safeJobError(error) {
+  const message = String(error?.message || 'Build failed.');
+  if (/^[A-Za-z0-9 .:_-]{1,240}$/.test(message) && !/[A-Za-z]:\\|\/[A-Za-z0-9_.-]+\//.test(message)) return message;
+  return 'Build failed during a server-managed operation.';
+}
