@@ -1,0 +1,137 @@
+name: Pilot report
+description: Submit a reproducible, sanitized result from one of the three pilot slots.
+title: "pilot: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing PocketForge Relay. GitHub issues are public.
+        Do not post vulnerabilities, tokens, private source, raw environment
+        dumps, or screenshots you do not have permission to share. Follow
+        SECURITY.md for suspected vulnerabilities.
+
+  - type: dropdown
+    id: pilot-slot
+    attributes:
+      label: Pilot slot
+      description: Slot 3 is available only after the Android readiness gate is PASS.
+      options:
+        - "Slot 1 - Bundled PWA demo"
+        - "Slot 2 - Trusted public Node.js repository"
+        - "Slot 3 - Android build and device evidence"
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Tested commit SHA
+      description: Paste the full immutable commit SHA.
+      placeholder: 40-character Git commit SHA
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Date and environment
+      description: Include date, time, timezone, host OS and architecture, Node.js, npm, Git, and browser versions.
+      placeholder: |
+        Date/time/timezone:
+        Host OS/architecture:
+        Node.js/npm/Git:
+        Browser/version:
+    validations:
+      required: true
+
+  - type: textarea
+    id: device
+    attributes:
+      label: Device context
+      description: For device checks, include model, OS version, physical or emulator, connection method, and authorization state. Otherwise write NOT RUN.
+      placeholder: "NOT RUN - bundled browser demonstration only"
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Source and configuration
+      description: Include repository URL or bundled-demo, exact Git ref, preset, and relevant configuration names. Replace every secret value with [REDACTED].
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Exact reproduction steps
+      description: Start from a stopped server. Include commands in order and their exit codes.
+      placeholder: |
+        1. Command - exit code
+        2. Action - observed state
+        3. Command - exit code
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed result
+      description: Include job identifier, terminal state, and relevant HTTP status code.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - PASS - executed and expected result observed
+        - FAIL - executed and expected result not observed
+        - NOT RUN - not executed; blocker explained below
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include the first and last relevant log events, artifact names, sizes, digests, and status of each attempted check. Explain every NOT RUN result.
+      placeholder: |
+        Logs:
+        Artifacts and digests:
+        PASS/FAIL/NOT RUN checks:
+        NOT RUN reasons:
+    validations:
+      required: true
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Optional consented screenshots or recording
+      description: Attach only sanitized material you own or have permission to publish. State what the image proves and what it does not prove.
+
+  - type: checkboxes
+    id: safety-consent
+    attributes:
+      label: Safety and publication consent
+      options:
+        - label: I used the bundled demo or a trusted public repository on a trusted machine and network.
+          required: true
+        - label: I removed tokens, credentials, private URLs, personal data, and sensitive paths from all submitted evidence.
+          required: true
+        - label: I understand this issue and its attachments are public.
+          required: true
+        - label: I have permission to publish every attached log excerpt, artifact detail, screenshot, and recording.
+          required: true
+        - label: This report is not a vulnerability disclosure.
+          required: true
