@@ -1,6 +1,6 @@
 # MVP Verification Record
 
-Date: 2026-08-12
+Date: 2026-08-13
 
 ## Environment
 
@@ -18,7 +18,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 10 passed, 0 failed
+- Automated tests: 14 passed, 0 failed
 - Bundled demo process execution: PASS
 - Demo artifact collection: PASS
 - HTTP health endpoint: PASS
@@ -28,6 +28,10 @@ npm test
 - Preset source compatibility: PASS
 - npm lockfile enforcement: PASS
 - Canonical artifact relative paths on Windows: PASS
+- Configuration defaults and supported boundaries: PASS
+- Malformed and out-of-range configuration rejection: PASS
+- Weak user-supplied token rejection: PASS
+- Invalid explicit configuration exits before server startup: PASS
 
 ## Verified demo outputs
 
@@ -46,4 +50,4 @@ The test suite verifies the MVP orchestration path and defensive input checks. A
 - A real CMake project build with project-specific native toolchains
 - Cross-device LAN access from a physical phone
 
-These paths are implemented as presets or transport behavior, but they require external repositories, toolchains, or devices and are not represented as verified by the 9-test suite.
+These paths are implemented as presets or transport behavior, but they require external repositories, toolchains, or devices and are not represented as verified by the automated test suite.

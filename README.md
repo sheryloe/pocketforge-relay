@@ -74,6 +74,10 @@ npm test
 The repository distinguishes implemented behavior from behavior exercised in a
 specific environment. See [the verification record](docs/VERIFICATION.md).
 
+All supported environment variables and limits are listed in
+[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md). Explicit malformed or
+out-of-range values stop startup rather than silently selecting a default.
+
 ## Architecture
 
 ```mermaid
