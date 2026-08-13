@@ -1,0 +1,97 @@
+name: Good first issue proposal
+description: Propose a small, bounded contribution with clear acceptance evidence.
+title: "good first issue: "
+labels: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to propose a beginner-sized contribution before investing
+        in a large patch. Do not report vulnerabilities here; follow SECURITY.md.
+        A maintainer will confirm scope before the proposal is treated as ready.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Contribution category
+      options:
+        - Documentation
+        - Test coverage
+        - Accessibility or mobile-browser usability
+        - Build-log parser
+        - Reproducible example
+        - Non-vulnerability security hardening
+        - Other bounded maintenance
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: User or maintainer problem
+      description: Give one observable example and explain who is affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: existing-search
+    attributes:
+      label: Existing code or tool search
+      description: List the repository files, standard-library feature, platform capability, existing issue, or dependency checked before proposing new code.
+    validations:
+      required: true
+
+  - type: textarea
+    id: smallest-change
+    attributes:
+      label: Smallest coherent change
+      description: Name the files or behavior in scope and what remains explicitly out of scope.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Write independently verifiable outcomes, including expected error or boundary behavior.
+      placeholder: |
+        - [ ] Observable behavior
+        - [ ] Boundary or error case
+        - [ ] Documentation updated when applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: trust-boundary
+    attributes:
+      label: Trust and data boundary
+      description: Identify affected commands, credentials, files, networks, artifacts, devices, logs, or screenshots. Write None only after checking.
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: List exact commands and environmental checks. Use NOT RUN for checks that cannot be executed.
+      placeholder: |
+        npm run check - expected PASS
+        npm test - expected PASS
+        Physical Android device - NOT RUN, no device available
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope confirmation
+      options:
+        - label: The proposal does not turn user input into arbitrary shell commands.
+          required: true
+        - label: I will keep the patch focused and add or update tests for behavioral changes.
+          required: true
+        - label: I will report only executed checks as PASS and mark other checks NOT RUN.
+          required: true
+        - label: I understand that a maintainer must confirm the scope before implementation is promised or assigned.
+          required: true

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#080d18" />
-  <meta name="description" content="PocketForge Relay mobile development control plane" />
+  <meta name="description" content="PocketForge Relay mobile development control plane" data-i18n-content="meta.description" />
   <title>PocketForge Relay</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -12,57 +12,192 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/"><img src="/icon.svg" alt="" width="40" height="40"><span><strong>PocketForge Relay</strong><small>mobile development control plane</small></span></a>
-  <div id="serverStatus" class="server-status" data-state="checking"><i></i><span>Checking relay</span></div>
+  <a class="brand" href="/"><img src="/icon.svg" alt="" width="40" height="40"><span><strong>PocketForge Relay</strong><small data-i18n="brand.subtitle">mobile development control plane</small></span></a>
+  <div class="topbar-actions">
+    <label class="language-control"><span data-i18n="language.label">Language</span><select id="languageSelect" data-i18n-aria-label="language.label" aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
+    <div id="serverStatus" class="server-status" data-state="checking"><i></i><span data-i18n="server.checking">Checking relay</span></div>
+  </div>
 </header>
 <main class="shell">
   <section class="hero">
-    <p class="eyebrow">WORKING MVP · v0.1.0</p>
-    <h1>Carry the control plane.<br><span>Leave the workstation behind.</span></h1>
-    <p>Start a build from your phone, watch each step, and retrieve the result from the compute environment suited to run it.</p>
-    <div class="loop"><b>Request</b> → <b>Checkout</b> → <b>Build</b> → <b>Artifact</b> → <b>Verify</b></div>
+    <p class="eyebrow" data-i18n="hero.eyebrow">WORKING MVP · v0.1.0</p>
+    <h1 data-i18n-prefix="hero.title">Carry the control plane.<br><span data-i18n="hero.titleAccent">Leave the workstation behind.</span></h1>
+    <p data-i18n="hero.body">Start a build from your phone, watch each step, and retrieve the result from the compute environment suited to run it.</p>
+    <div class="loop"><b data-i18n="loop.request">Request</b> → <b data-i18n="loop.checkout">Checkout</b> → <b data-i18n="loop.build">Build</b> → <b data-i18n="loop.artifact">Artifact</b> → <b data-i18n="loop.verify">Verify</b></div>
   </section>
 
   <section class="form-grid">
     <article class="panel">
-      <div class="heading"><div><small>01 · CONNECT</small><h2>Pair with this relay</h2></div><em>Bearer token</em></div>
-      <label>Relay token<div class="inline"><input id="tokenInput" type="password" placeholder="Token printed by the runner"><button id="connectButton" type="button" class="secondary">Connect</button></div><span>Stored in this browser tab only.</span></label>
-      <p id="connectionMessage" class="message"></p>
+      <div class="heading"><div><small data-i18n="connect.step">01 · CONNECT</small><h2 data-i18n="connect.title">Pair with this relay</h2></div><em data-i18n="connect.badge">Bearer token</em></div>
+      <label data-i18n-prefix="connect.tokenLabel">Relay token<div class="inline"><input id="tokenInput" type="password" data-i18n-placeholder="connect.tokenPlaceholder" placeholder="Token printed by the runner"><button id="connectButton" type="button" class="secondary" data-i18n="connect.button">Connect</button></div><span data-i18n="connect.storage">Stored in this browser tab only.</span></label>
+      <p id="connectionMessage" class="message" aria-live="polite"></p>
     </article>
 
     <article class="panel">
-      <div class="heading"><div><small>02 · LAUNCH</small><h2>Start a build job</h2></div><em>Preset-only</em></div>
+      <div class="heading"><div><small data-i18n="launch.step">02 · LAUNCH</small><h2 data-i18n="launch.title">Start a build job</h2></div><em data-i18n="launch.badge">Preset-only</em></div>
       <form id="jobForm">
-        <div class="segmented"><button type="button" class="segment active" data-source="demo">Bundled demo</button><button type="button" class="segment" data-source="github">Public GitHub</button></div>
-        <label>Job label <span>optional</span><input id="labelInput" maxlength="80" placeholder="Mobile smoke build"></label>
+        <div class="segmented"><button type="button" class="segment active" data-source="demo" data-i18n="launch.demo">Bundled demo</button><button type="button" class="segment" data-source="github" data-i18n="launch.github">Public GitHub</button></div>
+        <label data-i18n-prefix="launch.jobLabel">Job label <span data-i18n="common.optional">optional</span><input id="labelInput" maxlength="80" data-i18n-placeholder="launch.jobPlaceholder" placeholder="Mobile smoke build"></label>
         <div id="githubFields" class="github-fields" hidden>
-          <label>Repository URL<input id="repositoryInput" placeholder="https://github.com/owner/repository"></label>
-          <label>Branch or tag<input id="refInput" value="main"></label>
+          <label data-i18n-prefix="launch.repository">Repository URL<input id="repositoryInput" data-i18n-placeholder="launch.repositoryPlaceholder" placeholder="https://github.com/owner/repository"></label>
+          <label data-i18n-prefix="launch.ref">Branch or tag<input id="refInput" value="main"></label>
         </div>
-        <label>Build preset<select id="presetSelect"></select><span id="presetDescription">Connect to load presets.</span></label>
-        <button id="launchButton" type="submit" class="primary" disabled>Launch build loop</button>
+        <label data-i18n-prefix="launch.preset">Build preset<select id="presetSelect"></select><span id="presetDescription" data-i18n="launch.presetLoading">Connect to load presets.</span></label>
+        <button id="launchButton" type="submit" class="primary" disabled data-i18n="launch.button">Launch build loop</button>
       </form>
-      <p id="launchMessage" class="message"></p>
+      <p id="launchMessage" class="message" aria-live="polite"></p>
     </article>
   </section>
 
   <section class="work-grid">
     <article class="panel jobs-panel">
-      <div class="heading"><div><small>03 · OBSERVE</small><h2>Recent jobs</h2></div><button id="refreshButton" class="square" type="button">↻</button></div>
-      <div id="jobsEmpty" class="empty">◇<p>No jobs yet. The bundled demo takes only a moment.</p></div>
+      <div class="heading"><div><small data-i18n="jobs.step">03 · OBSERVE</small><h2 data-i18n="jobs.title">Recent jobs</h2></div><button id="refreshButton" class="square" type="button" data-i18n-aria-label="jobs.refresh" aria-label="Refresh local jobs">↻</button></div>
+      <div id="jobsEmpty" class="empty">◇<p data-i18n="jobs.empty">No jobs yet. The bundled demo takes only a moment.</p></div>
       <div id="jobsList" class="jobs"></div>
     </article>
     <article class="panel console-panel">
-      <div class="heading"><div><small>LIVE JOB</small><h2 id="activeJobTitle">Select a job</h2></div><div class="actions"><em id="activeJobStatus" class="status neutral">idle</em><button id="cancelButton" type="button" class="danger" hidden>Cancel</button></div></div>
+      <div class="heading"><div><small data-i18n="local.live">LIVE JOB</small><h2 id="activeJobTitle" data-i18n="local.select">Select a job</h2></div><div class="actions"><em id="activeJobStatus" class="status neutral" data-i18n="status.idle">idle</em><button id="cancelButton" type="button" class="danger" hidden data-i18n="common.cancel">Cancel</button></div></div>
       <div id="jobMeta" class="meta"></div>
-      <div id="logConsole" class="console"><p>Build output will stream here. No desktop-shaped theater, just the useful signals.</p></div>
-      <div class="heading artifacts-title"><div><small>04 · RETRIEVE</small><h3>Artifacts</h3></div><em id="artifactCount">0 files</em></div>
-      <div id="artifactsList" class="artifacts"><p>Artifacts appear after a job completes.</p></div>
+      <div id="logConsole" class="console"><p data-i18n="local.consoleEmpty">Build output will stream here. No desktop-shaped theater, just the useful signals.</p></div>
+      <div class="heading artifacts-title"><div><small data-i18n="local.retrieve">04 · RETRIEVE</small><h3 data-i18n="local.artifacts">Artifacts</h3></div><em id="artifactCount" data-i18n="files.zero">0 files</em></div>
+      <div id="artifactsList" class="artifacts"><p data-i18n="local.artifactsEmpty">Artifacts appear after a job completes.</p></div>
     </article>
   </section>
-  <aside><strong>MVP boundary</strong><span>This release proves the mobile orchestration spine. It is not yet a hardened container sandbox. Run trusted public repositories only.</span></aside>
+
+  <section id="deviceSection" class="panel device-panel" aria-labelledby="deviceHeading">
+    <div class="heading">
+      <div><small data-i18n="device.step">05 · DEVICE</small><h2 id="deviceHeading" data-i18n="device.title">Android device evidence</h2></div>
+      <em id="deviceState" class="status neutral" data-i18n="status.connect_first">connect first</em>
+    </div>
+    <p class="section-intro" data-i18n="device.intro">Install one reviewed debug APK on one authorized device, launch it, and retain bounded verification evidence.</p>
+    <div class="privacy-warning" role="note">
+      <strong data-i18n="device.privacyTitle">Privacy and authorization warning</strong>
+      <span data-i18n="device.privacyBody">Logcat, crash output, and the full device screenshot may contain personal or confidential information. Use only an authorized device over loopback, trusted VPN, or TLS. Evidence remains on this relay until explicitly deleted.</span>
+    </div>
+    <div class="device-layout">
+      <form id="deviceForm" class="device-controls">
+        <div class="step-label"><b data-i18n="device.stepOne">Step 1 of 2</b><span data-i18n="device.stepOneHelp">Choose a succeeded local job, one APK artifact, and an online device.</span></div>
+        <label for="deviceJobSelect" data-i18n-prefix="device.job">Succeeded job<select id="deviceJobSelect" disabled><option value="" data-i18n="device.jobConnect">Connect to load eligible jobs.</option></select></label>
+        <label for="deviceArtifactSelect" data-i18n-prefix="device.artifact">APK artifact<select id="deviceArtifactSelect" disabled><option value="" data-i18n="device.artifactFirst">Select a job first.</option></select></label>
+        <label for="deviceSelect" data-i18n-prefix="device.target">Authorized device<select id="deviceSelect" disabled><option value="" data-i18n="device.deviceConnect">Connect to enumerate devices.</option></select></label>
+        <button id="deviceRefreshButton" type="button" class="secondary secondary-wide" data-i18n="device.refresh" disabled>Refresh devices</button>
+        <button id="devicePrepareButton" type="submit" class="primary" data-i18n="device.prepare" disabled>Prepare install review</button>
+        <p id="deviceMessage" class="message" aria-live="polite"></p>
+
+        <section id="deviceApprovalPreview" class="approval-preview device-approval" aria-labelledby="deviceApprovalHeading" tabindex="-1" hidden>
+          <div class="step-label"><b id="deviceApprovalHeading" data-i18n="device.stepTwo">Step 2 of 2</b><span data-i18n="device.stepTwoHelp">Review the immutable APK and device identity before installation.</span></div>
+          <dl class="review-list">
+            <div><dt data-i18n="device.reviewRepository">Repository</dt><dd id="deviceReviewRepository"></dd></div>
+            <div><dt data-i18n="device.reviewCommit">Resolved commit</dt><dd id="deviceReviewCommit"></dd></div>
+            <div><dt data-i18n="device.reviewArtifact">Artifact</dt><dd id="deviceReviewArtifact"></dd></div>
+            <div><dt data-i18n="device.reviewSha">APK SHA-256</dt><dd><code id="deviceReviewSha"></code></dd></div>
+            <div><dt data-i18n="device.reviewPackage">Package</dt><dd id="deviceReviewPackage"></dd></div>
+            <div><dt data-i18n="device.reviewVersion">Version</dt><dd id="deviceReviewVersion"></dd></div>
+            <div><dt data-i18n="device.reviewSignature">Signature</dt><dd id="deviceReviewSignature"></dd></div>
+            <div><dt data-i18n="device.reviewSigner">Signer SHA-256</dt><dd><code id="deviceReviewSigner"></code></dd></div>
+            <div><dt data-i18n="device.reviewDevice">Device model</dt><dd id="deviceReviewModel"></dd></div>
+            <div><dt data-i18n="device.reviewExpires">Approval expires</dt><dd id="deviceReviewExpires"></dd></div>
+          </dl>
+          <label class="consent-row"><input id="deviceConsent" type="checkbox"><span data-i18n="device.consent">I confirm that I am authorized to install this APK and collect the disclosed evidence.</span></label>
+          <div class="approval-actions">
+            <button id="deviceApproveButton" type="button" class="primary" data-i18n="device.approve" disabled>Approve install and verify</button>
+            <button id="deviceDiscardButton" type="button" class="secondary" data-i18n="device.discard">Discard review</button>
+          </div>
+        </section>
+      </form>
+
+      <div class="device-actions-panel">
+        <div class="heading compact-heading">
+          <div><small data-i18n="device.actionsLabel">DEVICE ACTIONS</small><h3 data-i18n="device.recentActions">Recent device actions</h3></div>
+          <button id="deviceActionsRefreshButton" class="square" type="button" data-i18n-aria-label="device.refreshActions" aria-label="Refresh device actions" disabled>↻</button>
+        </div>
+        <div id="deviceActionsEmpty" class="empty compact-empty">◇<p data-i18n="device.actionsEmpty">No device actions for this job.</p></div>
+        <div id="deviceActionsList" class="jobs device-actions-list"></div>
+
+        <section id="deviceActionDetail" class="action-run-detail" aria-labelledby="activeDeviceActionTitle" hidden>
+          <div class="heading compact-heading">
+            <div><small data-i18n="device.activeAction">ACTIVE DEVICE ACTION</small><h3 id="activeDeviceActionTitle" data-i18n="device.selectAction">Select a device action</h3></div>
+            <em id="activeDeviceActionStatus" class="status neutral" data-i18n="status.idle">idle</em>
+          </div>
+          <div id="deviceActionMeta" class="meta"></div>
+          <p id="deviceActionError" class="message error" hidden></p>
+          <div class="heading artifacts-title"><div><small data-i18n="device.evidence">DEVICE EVIDENCE</small><h3 data-i18n="device.evidenceFiles">Verification files</h3></div><em id="deviceEvidenceState" class="status neutral" data-i18n="device.evidencePending">pending</em></div>
+          <div id="deviceEvidenceList" class="device-evidence-list"><p data-i18n="device.evidenceEmpty">Evidence downloads appear after the action finishes.</p></div>
+          <button id="deviceDeleteButton" type="button" class="danger device-delete" data-i18n="device.delete" hidden>Delete retained record and evidence</button>
+          <section id="deviceDeleteConfirm" class="delete-confirm" aria-labelledby="deviceDeleteHeading" hidden>
+            <strong id="deviceDeleteHeading" data-i18n="device.deleteTitle">Permanently delete this record and its evidence?</strong>
+            <p data-i18n="device.deleteBody">This removes the retained action record and any JSON, logcat, crash output, or screenshot from the relay. It cannot be undone.</p>
+            <div class="approval-actions">
+              <button id="deviceDeleteConfirmButton" type="button" class="danger" data-i18n="device.deleteConfirm">Confirm record deletion</button>
+              <button id="deviceDeleteCancelButton" type="button" class="secondary" data-i18n="common.cancel">Cancel</button>
+            </div>
+          </section>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section id="actionsSection" class="panel actions-panel" aria-labelledby="actionsHeading">
+    <div class="heading">
+      <div><small data-i18n="actions.step">06 · REMOTE</small><h2 id="actionsHeading" data-i18n="actions.title">GitHub Actions</h2></div>
+      <em id="actionsState" class="status neutral" data-i18n="status.connect_first">connect first</em>
+    </div>
+    <p class="section-intro" data-i18n="actions.intro">Dispatch only an allowlisted workflow after reviewing the exact repository, ref, inputs, and required evidence.</p>
+    <div class="actions-layout">
+      <form id="actionForm" class="actions-controls">
+        <div class="step-label"><b data-i18n="actions.stepOne">Step 1 of 2</b><span data-i18n="actions.stepOneHelp">Choose a target and create a short-lived review.</span></div>
+        <label for="actionTargetSelect" data-i18n-prefix="actions.target">Action target<select id="actionTargetSelect" disabled><option value="" data-i18n="actions.targetConnect">Connect to load targets.</option></select></label>
+        <label for="actionRefSelect" data-i18n-prefix="actions.ref">Allowlisted ref<select id="actionRefSelect" disabled><option value="" data-i18n="actions.refFirst">Select a target first.</option></select></label>
+        <label for="actionLabelInput" data-i18n-prefix="actions.runLabel">Run label <span data-i18n="common.optional">optional</span><input id="actionLabelInput" maxlength="80" data-i18n-placeholder="actions.runPlaceholder" placeholder="Android debug evidence"></label>
+        <button id="actionReviewButton" type="submit" class="secondary secondary-wide" disabled data-i18n="actions.review">Review workflow dispatch</button>
+        <p id="actionMessage" class="message" aria-live="polite"></p>
+
+        <section id="actionApprovalPreview" class="approval-preview" aria-labelledby="actionApprovalHeading" tabindex="-1" hidden>
+          <div class="step-label"><b id="actionApprovalHeading" data-i18n="actions.stepTwo">Step 2 of 2</b><span data-i18n="actions.stepTwoHelp">Confirm these immutable values before GitHub receives a write request.</span></div>
+          <dl class="review-list">
+            <div><dt data-i18n="actions.reviewTarget">Target</dt><dd id="approvalTarget"></dd></div>
+            <div><dt data-i18n="actions.reviewRepository">Repository</dt><dd id="approvalRepository"></dd></div>
+            <div><dt data-i18n="actions.reviewWorkflow">Workflow</dt><dd id="approvalWorkflow"></dd></div>
+            <div><dt data-i18n="actions.reviewRef">Ref</dt><dd id="approvalRef"></dd></div>
+            <div><dt data-i18n="actions.reviewInputs">Fixed inputs</dt><dd><code id="approvalInputs"></code></dd></div>
+            <div><dt data-i18n="actions.reviewEvidence">Required evidence</dt><dd id="approvalArtifacts"></dd></div>
+            <div><dt data-i18n="actions.reviewExpires">Expires</dt><dd id="approvalExpires"></dd></div>
+          </dl>
+          <div class="approval-actions">
+            <button id="actionApproveButton" type="button" class="primary" data-i18n="actions.approve">Approve and dispatch</button>
+            <button id="actionDiscardButton" type="button" class="secondary" data-i18n="actions.discard">Discard review</button>
+          </div>
+        </section>
+      </form>
+
+      <div class="actions-runs">
+        <div class="heading compact-heading">
+          <div><small data-i18n="actions.remoteRuns">REMOTE RUNS</small><h3 data-i18n="actions.recentRuns">Recent workflow runs</h3></div>
+          <button id="actionRefreshButton" class="square" type="button" data-i18n-aria-label="actions.refresh" aria-label="Refresh GitHub Actions runs" disabled>↻</button>
+        </div>
+        <div id="actionRunsEmpty" class="empty compact-empty">◇<p data-i18n="actions.runsEmpty">No workflow runs yet.</p></div>
+        <div id="actionRunsList" class="jobs action-runs-list"></div>
+
+        <section id="actionRunDetail" class="action-run-detail" aria-labelledby="activeActionTitle" hidden>
+          <div class="heading compact-heading">
+            <div><small data-i18n="actions.activeRun">ACTIVE RUN</small><h3 id="activeActionTitle" data-i18n="actions.selectRun">Select a workflow run</h3></div>
+            <div class="actions">
+              <em id="activeActionStatus" class="status neutral" data-i18n="status.idle">idle</em>
+              <button id="actionCancelButton" type="button" class="danger" hidden data-i18n="common.cancel">Cancel</button>
+            </div>
+          </div>
+          <a id="activeActionUrl" class="external-run-link" target="_blank" rel="noopener noreferrer" hidden data-i18n="actions.openGitHub">Open on GitHub ↗</a>
+          <div id="actionRunMeta" class="meta"></div>
+          <div id="actionLogConsole" class="console action-console"><p data-i18n="actions.remoteConsoleEmpty">Remote workflow output will appear here.</p></div>
+          <div class="heading artifacts-title"><div><small data-i18n="actions.evidence">EVIDENCE</small><h3 data-i18n="actions.logsArtifacts">Logs and artifacts</h3></div><em id="actionArtifactCount" data-i18n="files.zero">0 files</em></div>
+          <div id="actionArtifactsList" class="artifacts"><p data-i18n="actions.evidenceEmpty">Artifacts appear when evidence collection completes.</p></div>
+        </section>
+      </div>
+    </div>
+  </section>
+  <aside><strong data-i18n="boundary.title">MVP boundary</strong><span data-i18n="boundary.body">This release proves the mobile orchestration spine. It is not yet a hardened container sandbox. Run trusted public repositories only.</span></aside>
 </main>
-<footer><span>PocketForge Relay · Apache-2.0</span><span>The phone commands the loop. Compute happens where it belongs.</span></footer>
+<footer><span data-i18n="footer.license">PocketForge Relay · Apache-2.0</span><span data-i18n="footer.tagline">The phone commands the loop. Compute happens where it belongs.</span></footer>
 <script type="module" src="/app.js"></script>
 </body>
 </html>
