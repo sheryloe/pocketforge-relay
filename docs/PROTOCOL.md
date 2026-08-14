@@ -4,6 +4,7 @@ All `/api/*` routes except `/api/health` require `Authorization: Bearer <POCKETF
 
 - `GET /api/health`
 - `GET /api/presets`
+- `GET /api/capabilities`
 - `GET /api/jobs`
 - `POST /api/jobs`
 - `GET /api/jobs/{jobId}`
@@ -21,4 +22,19 @@ GitHub request:
 {"sourceType":"github","repository":"https://github.com/owner/repository","ref":"main","presetId":"npm-test"}
 ```
 
-This pre-1.0 API may change. The target protocol adds schema versions, capability negotiation, resumable offsets, signed pairing, runner identity, artifact digests, and adapter metadata.
+## Adapter contract v1
+
+`GET /api/capabilities` returns the relay protocol version and one descriptor
+for each built-in adapter. Every descriptor has a stable identifier, adapter
+kind, contract version, enabled state, and a sorted list of bounded capability
+identifiers. Disabled adapters are still advertised so clients can distinguish
+"known but disabled" from "unknown". The AI agent descriptor is disabled; this
+endpoint does not claim that an AI adapter exists.
+
+Clients must reject contract versions they do not understand instead of
+guessing compatibility. Capability identifiers describe available operations;
+they never grant authority or bypass authentication and approval.
+
+This pre-1.0 API may change. The remaining target protocol work includes
+versioned request/event envelopes, resumable offsets, signed pairing, runner
+identity, and generic artifact digests.

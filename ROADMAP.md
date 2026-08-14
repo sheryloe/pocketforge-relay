@@ -26,6 +26,10 @@ recovery tests, non-root/default-deny/resource-limit container checks, and a
 sanitized pilot report recording a pinned commit, clean checkout, commands,
 exit codes, and artifact digests.
 
+The adapter descriptor and capability-negotiation slice of the first item is
+implemented as contract version 1. Versioned request/event envelopes remain
+planned and are not represented as complete.
+
 ## v0.3 - Human-governed agent loop (target)
 
 - Provider-neutral agent adapter and conformance suite.

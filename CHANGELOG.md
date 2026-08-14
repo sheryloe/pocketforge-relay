@@ -9,6 +9,8 @@ once releases are published.
 
 ### Added
 
+- Authenticated protocol-v1 capability discovery with strict built-in adapter
+  descriptors and explicit disabled states.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.
