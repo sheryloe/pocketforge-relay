@@ -32,6 +32,11 @@ test('HTTP API authenticates and accepts demo job', async () => {
   try {
     assert.equal((await fetch(`${base}/api/health`)).status, 200);
     assert.equal((await fetch(`${base}/api/jobs`)).status, 401);
+    const capabilitiesResponse = await fetch(`${base}/api/capabilities`, { headers: { Authorization: 'Bearer test-token' } });
+    assert.equal(capabilitiesResponse.status, 200);
+    const capabilities = await capabilitiesResponse.json();
+    assert.equal(capabilities.protocolVersion, 1);
+    assert.equal(capabilities.adapters.find(adapter => adapter.id === 'ai-agent').enabled, false);
     const response = await fetch(`${base}/api/jobs`, {
       method: 'POST',
       headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
