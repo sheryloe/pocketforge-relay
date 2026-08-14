@@ -80,6 +80,20 @@ test('HTTP API preserves admission-control status codes', async () => {
   }
 });
 
+test('HTTP API serves authenticated durable job history', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const manager = { getJobHistory: async value => value === id ? [{ schemaVersion: 1, jobId: id, sequence: 1, type: 'status', status: 'succeeded' }] : null };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/jobs/${id}/history`;
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    const response = await fetch(url, { headers: { Authorization: 'Bearer test-token' } });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).events[0].status, 'succeeded');
+  } finally { await closeServer(server); }
+});
+
 test('SSE ends completed snapshots without retaining a subscription', async () => {
   const snapshot = { id: '00000000-0000-0000-0000-000000000001', status: 'succeeded' };
   const manager = {
