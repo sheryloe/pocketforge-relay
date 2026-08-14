@@ -1,6 +1,7 @@
 import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
+import { relayCapabilities } from './adapter-protocol.mjs';
 import { GitHubActionsError } from './github-actions-client.mjs';
 import { ActionApprovalError } from './github-actions-runner.mjs';
 import { mapDeviceActionError } from './device-action-runtime.mjs';
@@ -29,6 +30,7 @@ async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,event
     return deviceActionsApi(req,res,url,manager,deviceActionsRuntime);
   }
   if (url.pathname === '/api/presets' && req.method === 'GET') return json(res,200,{presets:listPresets()});
+  if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,relayCapabilities({actionsEnabled:Boolean(actionsManager),deviceEnabled:Boolean(deviceActionsRuntime)}));
   if (url.pathname === '/api/jobs' && req.method === 'GET') return json(res,200,{jobs:manager.listJobs()});
   if (url.pathname === '/api/jobs' && req.method === 'POST') { const body = await readJson(req,64*1024); try { return json(res,202,{job:manager.createJob(body)}); } catch(e) { return json(res,e.statusCode||400,{error:e.message}); } }
   let m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)$/i); if (m && req.method === 'GET') { const j=manager.getJob(m[1]); return j?json(res,200,{job:j}):json(res,404,{error:'Job not found.'}); }
