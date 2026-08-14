@@ -4,6 +4,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
 import { JobEventStore } from './job-event-store.mjs';
+import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
 import { createLogRedactor, normalizeGitHubRepository, validateGitRef, validateLabel } from './security.mjs';
@@ -54,6 +55,7 @@ export class JobManager {
       finishedAt: null,
       exitCode: null,
       error: null,
+      failure: null,
       currentStep: null,
       workspace: null,
       sourceDir: null,
@@ -227,6 +229,7 @@ export class JobManager {
         job.exitCode = 1;
         job.error = safeJobError(error);
         this.addLog(job, 'stderr', job.error);
+        job.failure = classifyBuildFailure(job.presetId, job.logs);
         finalStatus = 'failed';
       }
     }
@@ -302,6 +305,7 @@ export class JobManager {
       finishedAt: job.finishedAt,
       exitCode: job.exitCode,
       error: job.error,
+      failure: job.failure,
       currentStep: job.currentStep,
       logs: [...job.logs],
       artifacts: publicArtifacts(job.artifacts),
