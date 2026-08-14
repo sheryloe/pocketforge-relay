@@ -15,7 +15,8 @@ Android-device execution remain separate `NOT RUN` integration claims.
 ## v0.2 - Durable trust foundation (next)
 
 - Versioned protocol schema and adapter contracts.
-- Append-only event persistence and restart recovery.
+- Append-only event persistence and restart-readable audit history; current-state
+  projection and interrupted-process recovery remain planned.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
 - Gradle, npm, and CMake failure parsers.

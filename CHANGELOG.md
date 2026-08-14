@@ -11,6 +11,8 @@ once releases are published.
 
 - Authenticated protocol-v1 capability discovery with strict built-in adapter
   descriptors and explicit disabled states.
+- Bounded append-only job event logs with authenticated history reads that
+  remain available after relay restart.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.
