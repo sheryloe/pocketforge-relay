@@ -13,6 +13,8 @@ once releases are published.
   descriptors and explicit disabled states.
 - Bounded append-only job event logs with authenticated history reads that
   remain available after relay restart.
+- Fixed, non-reflective npm, Android Gradle, and CMake failure diagnostics in
+  failed job state and build summaries.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.

@@ -14,7 +14,7 @@ Before submitting an application, attach observed and dated evidence such as rel
 | 2026-08-13 | GitHub-hosted CI | Dependency install, syntax checks, and the test job completed successfully | [Actions run 31662358775](https://github.com/sheryloe/pocketforge-relay/actions/runs/31662358775) |
 | 2026-08-13 | Local automated verification | 111 tests passed and 0 failed on the merged candidate | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-13 | Mobile-browser demonstration | EN/KO/JA switching, zero horizontal overflow, zero console errors, and three bundled-demo artifacts at 390 x 844 | [`VERIFICATION.md`](VERIFICATION.md) |
-| 2026-08-14 | Documentation-contract rerun | Syntax checks passed; 113 tests passed and 0 failed on the current documentation candidate | [`VERIFICATION.md`](VERIFICATION.md) |
+| 2026-08-14 | v0.2 foundation candidate | Syntax checks passed; 122 tests passed and 0 failed with adapter-contract, durable-history, and failure-diagnostic coverage | [`VERIFICATION.md`](VERIFICATION.md) |
 
 These entries show repository maintenance and local/browser verification. They
 do not establish downloads, active installations, external contributors, or

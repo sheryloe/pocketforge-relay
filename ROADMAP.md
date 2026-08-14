@@ -19,7 +19,8 @@ Android-device execution remain separate `NOT RUN` integration claims.
   projection and interrupted-process recovery remain planned.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
-- Gradle, npm, and CMake failure parsers.
+- Fixed public diagnostics for common Gradle, npm, and CMake failures are
+  implemented; fixture coverage should expand with sanitized pilot evidence.
 - One reproducible pilot against a trusted external Node.js repository.
 
 Exit evidence for v0.2 includes versioned compatibility fixtures, forced-restart
