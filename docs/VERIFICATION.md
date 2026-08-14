@@ -1,6 +1,8 @@
 # MVP Verification Record
 
-Date: 2026-08-13
+Initial record: 2026-08-13
+
+Latest automated rerun: 2026-08-14
 
 ## Environment
 
@@ -18,7 +20,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 111 passed, 0 failed
+- Automated tests: 113 passed, 0 failed
 - Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
 - Focused hardening regression suite: 20 of 20 repeated runs passed
 - Bundled demo process execution: PASS
@@ -61,6 +63,9 @@ npm test
 - English/Korean/Japanese catalog key parity and referenced-key coverage: PASS
 - Locale-only persistence and offline locale-bundle coverage: PASS
 - English/Korean/Japanese README structural and link parity: PASS
+- English/Korean/Japanese AI-direction, implementation-boundary, data-consent,
+  Actions, and Android claim parity: PASS
+- Relative Markdown links in the maintained READMEs and roadmap: PASS
 - Current Android-integrated PWA at 390 x 844 in the Codex in-app browser: PASS
 - English/Korean/Japanese live locale switching at 390 x 844: PASS
 - English/Korean/Japanese horizontal overflow at 390 x 844: PASS (0 overflowing locales)
