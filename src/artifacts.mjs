@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const MIME = new Map([['.apk','application/vnd.android.package-archive'],['.aab','application/octet-stream'],['.html','text/html; charset=utf-8'],['.css','text/css; charset=utf-8'],['.js','text/javascript; charset=utf-8'],['.mjs','text/javascript; charset=utf-8'],['.json','application/json; charset=utf-8'],['.txt','text/plain; charset=utf-8'],['.svg','image/svg+xml'],['.png','image/png'],['.wasm','application/wasm'],['.zip','application/zip']]);
@@ -12,8 +13,19 @@ export async function collectArtifacts({ sourceDir, preset, maxFiles, maxBytes }
     if (results.length >= maxFiles) return;
     const stat = await fs.lstat(file); if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maxBytes) return;
     const real = await fs.realpath(file); if (real !== realSource && !real.startsWith(`${realSource}${path.sep}`)) return; if (seen.has(real)) return; seen.add(real);
+    const handle = await fs.open(real, 'r');
+    let sha256;
+    try {
+      const opened = await handle.stat();
+      if (!sameFile(stat, opened) || opened.size > maxBytes) return;
+      const hash = crypto.createHash('sha256');
+      for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) hash.update(chunk);
+      const after = await handle.stat();
+      if (!sameFile(opened, after)) return;
+      sha256 = hash.digest('hex');
+    } finally { await handle.close(); }
     const relativePath = path.relative(realSource, real).split(path.sep).join('/');
-    results.push({ id: String(results.length), name: path.basename(real), relativePath, absolutePath: real, size: stat.size, contentType: MIME.get(path.extname(real).toLowerCase()) || 'application/octet-stream' });
+    results.push({ id: String(results.length), name: path.basename(real), relativePath, absolutePath: real, size: stat.size, sha256, contentType: MIME.get(path.extname(real).toLowerCase()) || 'application/octet-stream' });
   };
   await walk(path.join(sourceDir, '.pocketforge-result'), add, results, maxFiles);
   if (preset.artifactMode === 'web') await walk(path.join(sourceDir, 'dist'), add, results, maxFiles);
@@ -34,4 +46,8 @@ async function walk(root, onFile, results, maxFiles, skipLarge = false) {
     }
   }
 }
-export const publicArtifacts = artifacts => artifacts.map(({ id, name, relativePath, size, contentType }) => ({ id, name, relativePath, size, contentType }));
+function sameFile(left, right) {
+  return left.isFile() && right.isFile() && left.dev === right.dev && left.ino === right.ino
+    && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
+}
+export const publicArtifacts = artifacts => artifacts.map(({ id, name, relativePath, size, sha256, contentType }) => ({ id, name, relativePath, size, sha256, contentType }));
