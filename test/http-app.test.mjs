@@ -94,6 +94,24 @@ test('HTTP API serves authenticated durable job history', async () => {
   } finally { await closeServer(server); }
 });
 
+test('artifact download publishes the collection-time SHA-256 digest', async () => {
+  const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-http-artifact-'));
+  const file = path.join(sandbox, 'artifact.txt');
+  await fs.writeFile(file, 'artifact');
+  const manager = { getArtifact: () => ({ absolutePath: file, name: 'artifact.txt', contentType: 'text/plain; charset=utf-8', sha256: 'c7c5c1d70c5dec4416ab6158afd0b223ef40c29b1dc1f97ed9428b94d4cadb1c' }) };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/jobs/123e4567-e89b-42d3-a456-426614174000/artifacts/0`, { headers: { Authorization: 'Bearer test-token' } });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-artifact-sha256'), 'c7c5c1d70c5dec4416ab6158afd0b223ef40c29b1dc1f97ed9428b94d4cadb1c');
+    assert.equal(await response.text(), 'artifact');
+  } finally {
+    await closeServer(server);
+    await fs.rm(sandbox, { recursive: true, force: true });
+  }
+});
+
 test('SSE ends completed snapshots without retaining a subscription', async () => {
   const snapshot = { id: '00000000-0000-0000-0000-000000000001', status: 'succeeded' };
   const manager = {
