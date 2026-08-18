@@ -50,6 +50,18 @@ after restart.
 Failed local jobs may include a `failure` object with fixed `tool`, `category`,
 `code`, and `summary` fields. See [`FAILURE_DIAGNOSTICS.md`](FAILURE_DIAGNOSTICS.md).
 
+## Artifact digests
+
+Every collected local artifact includes a lowercase hexadecimal `sha256` field.
+The authenticated download repeats that value in `X-Artifact-SHA256`. Collection
+hashes one opened file handle and excludes a file if its identity, size, or
+timestamps change before hashing finishes.
+
+This is collection-time integrity evidence, not an immutable snapshot or signed
+provenance statement. A client should hash the downloaded bytes and treat a
+mismatch as `FAIL`; the relay does not currently re-hash a local artifact before
+each download.
+
 This pre-1.0 API may change. The remaining target protocol work includes
 versioned request/event envelopes, resumable offsets, signed pairing, runner
-identity, and generic artifact digests.
+identity, immutable artifact snapshots, and signed provenance.

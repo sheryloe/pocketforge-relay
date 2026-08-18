@@ -15,6 +15,8 @@ once releases are published.
   remain available after relay restart.
 - Fixed, non-reflective npm, Android Gradle, and CMake failure diagnostics in
   failed job state and build summaries.
+- Collection-time SHA-256 digests in local artifact state and authenticated
+  download response headers.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.

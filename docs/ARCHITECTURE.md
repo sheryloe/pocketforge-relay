@@ -53,6 +53,12 @@ messages should eventually include schema version, stable event type,
 correlation identifiers, authoritative timestamp, and adapter capability
 version.
 
+The local artifact collector calculates SHA-256 through the opened artifact
+handle and publishes that collection-time digest in job state and the download
+response. It rejects identity or metadata drift during hashing. Local artifacts
+are not yet immutable snapshots, and downloads do not re-hash them; clients must
+verify downloaded bytes against the advertised digest.
+
 The optional Actions run manager is a separate in-memory admission and state
 boundary. It accepts only server-configured targets, derives every workspace
 under `POCKETFORGE_DATA_DIR/action-runs`, and never puts its GitHub credential

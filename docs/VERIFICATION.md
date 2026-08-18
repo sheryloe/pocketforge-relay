@@ -2,7 +2,7 @@
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-14
+Latest automated rerun: 2026-08-18
 
 ## Environment
 
@@ -20,7 +20,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 122 passed, 0 failed
+- Automated tests: 123 passed, 0 failed
 - Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
 - Focused hardening regression suite: 20 of 20 repeated runs passed
 - Bundled demo process execution: PASS
@@ -69,6 +69,7 @@ npm test
 - Protocol-v1 adapter descriptors and authenticated capability discovery: PASS
 - Bounded append-only job history and restart-readable audit events: PASS
 - Fixed, non-reflective npm, Gradle, and CMake failure diagnostics: PASS
+- Collection-time local artifact SHA-256 and download digest header: PASS
 - Current Android-integrated PWA at 390 x 844 in the Codex in-app browser: PASS
 - English/Korean/Japanese live locale switching at 390 x 844: PASS
 - English/Korean/Japanese horizontal overflow at 390 x 844: PASS (0 overflowing locales)
