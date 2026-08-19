@@ -2,6 +2,7 @@ import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { relayCapabilities } from './adapter-protocol.mjs';
+import { sameFile, sha256Handle } from './artifacts.mjs';
 import { GitHubActionsError } from './github-actions-client.mjs';
 import { ActionApprovalError } from './github-actions-runner.mjs';
 import { mapDeviceActionError } from './device-action-runtime.mjs';
@@ -37,7 +38,7 @@ async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,event
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/history$/i); if (m && req.method === 'GET') { const events=await manager.getJobHistory(m[1]); return events?json(res,200,{events}):json(res,404,{error:'Job history not found.'}); }
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/cancel$/i); if (m && req.method === 'POST') { const j=manager.cancelJob(m[1]); return j?json(res,200,{job:j}):json(res,404,{error:'Job not found.'}); }
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/events$/i); if (m && req.method === 'GET') return streamJobEvents(req,res,manager,m[1],eventStreamClosers);
-  m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/artifacts\/([0-9]+)$/i); if (m && req.method === 'GET') { const a=manager.getArtifact(m[1],m[2]); if(!a) return json(res,404,{error:'Artifact not found.'}); return sendFile(res,a.absolutePath,{'Content-Type':a.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(a.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':a.sha256}); }
+  m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/artifacts\/([0-9]+)$/i); if (m && req.method === 'GET') { const a=manager.getArtifact(m[1],m[2]); if(!a) return json(res,404,{error:'Artifact not found.'}); return sendFile(res,a.absolutePath,{'Content-Type':a.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(a.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':a.sha256},{sha256:a.sha256}); }
   return json(res,404,{error:'API route not found.'});
 }
 
@@ -177,7 +178,7 @@ function streamJobEvents(req,res,manager,jobId,eventStreamClosers) {
   eventStreamClosers.add(closeStream); req.once('close',closeStream);
 }
 async function staticFile(res,dir,requestPath) { const p=safeStaticPath(dir,requestPath); if(!p){applySecurityHeaders(res);return text(res,400,'Bad request.');} applySecurityHeaders(res); const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;} }
-async function sendFile(res,filePath,headers) {
+async function sendFile(res,filePath,headers,{sha256}={}) {
   let before;
   try { before=await fsp.lstat(filePath); }
   catch(error) { if(error?.code==='ENOENT')throw fileResponseError(404,'File not found.'); throw error; }
@@ -188,9 +189,13 @@ async function sendFile(res,filePath,headers) {
   let handedOff=false;
   try {
     const opened=await handle.stat();
-    if(!opened.isFile()||opened.dev!==before.dev||opened.ino!==before.ino){const error=new Error('File changed before download.');error.statusCode=409;throw error;}
+    if(!sameFile(before,opened)){const error=new Error('File changed before download.');error.statusCode=409;throw error;}
+    if(sha256){
+      const actual=await sha256Handle(handle);const verified=await handle.stat();
+      if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
+    }
     res.writeHead(200,{...headers,'Content-Length':opened.size});
-    const stream=handle.createReadStream({autoClose:true});
+    const stream=handle.createReadStream({autoClose:true,start:0});
     handedOff=true;
     await new Promise((resolve,reject)=>{
       let settled=false;

@@ -18,11 +18,10 @@ export async function collectArtifacts({ sourceDir, preset, maxFiles, maxBytes }
     try {
       const opened = await handle.stat();
       if (!sameFile(stat, opened) || opened.size > maxBytes) return;
-      const hash = crypto.createHash('sha256');
-      for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) hash.update(chunk);
+      const hash = await sha256Handle(handle);
       const after = await handle.stat();
       if (!sameFile(opened, after)) return;
-      sha256 = hash.digest('hex');
+      sha256 = hash;
     } finally { await handle.close(); }
     const relativePath = path.relative(realSource, real).split(path.sep).join('/');
     results.push({ id: String(results.length), name: path.basename(real), relativePath, absolutePath: real, size: stat.size, sha256, contentType: MIME.get(path.extname(real).toLowerCase()) || 'application/octet-stream' });
@@ -46,7 +45,12 @@ async function walk(root, onFile, results, maxFiles, skipLarge = false) {
     }
   }
 }
-function sameFile(left, right) {
+export async function sha256Handle(handle) {
+  const hash = crypto.createHash('sha256');
+  for await (const chunk of handle.createReadStream({ autoClose: false, start: 0 })) hash.update(chunk);
+  return hash.digest('hex');
+}
+export function sameFile(left, right) {
   return left.isFile() && right.isFile() && left.dev === right.dev && left.ino === right.ino
     && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
 }
