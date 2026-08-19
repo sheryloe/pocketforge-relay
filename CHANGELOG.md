@@ -9,6 +9,16 @@ once releases are published.
 
 ### Added
 
+- Authenticated protocol-v1 capability discovery with strict built-in adapter
+  descriptors and explicit disabled states.
+- Bounded append-only job event logs with authenticated history reads that
+  remain available after relay restart.
+- Fixed, non-reflective npm, Android Gradle, and CMake failure diagnostics in
+  failed job state and build summaries.
+- Collection-time SHA-256 digests in local artifact state and authenticated
+  download response headers.
+- Pre-download identity, metadata, and SHA-256 verification that rejects changed
+  local artifacts before response headers are sent.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.

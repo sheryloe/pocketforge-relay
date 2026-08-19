@@ -3,11 +3,18 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
+import { JobEventStore } from './job-event-store.mjs';
+import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
 import { createLogRedactor, normalizeGitHubRepository, validateGitRef, validateLabel } from './security.mjs';
 
 const FINAL = new Set(['succeeded', 'failed', 'cancelled']);
+const NO_EVENT_STORE = Object.freeze({
+  append: () => Promise.resolve(),
+  flush: () => Promise.resolve(),
+  read: async () => null,
+});
 
 export class JobManager {
   constructor(config) {
@@ -20,6 +27,7 @@ export class JobManager {
     this.idleWaiters = new Set();
     this.finishedSequence = 0;
     this.redactLog = createLogRedactor([config.token]);
+    this.eventStore = config.eventStore || (config.dataDir ? new JobEventStore(path.join(config.dataDir, 'job-events')) : NO_EVENT_STORE);
   }
 
   createJob(input = {}) {
@@ -47,12 +55,14 @@ export class JobManager {
       finishedAt: null,
       exitCode: null,
       error: null,
+      failure: null,
       currentStep: null,
       workspace: null,
       sourceDir: null,
       logs: [],
       artifacts: [],
       eventSequence: 0,
+      persistedEventSequence: 0,
       events: new EventEmitter(),
       controller: new AbortController(),
     };
@@ -72,6 +82,10 @@ export class JobManager {
   getJob(id) {
     const job = this.jobs.get(id);
     return job ? this.publicJob(job) : null;
+  }
+
+  getJobHistory(id) {
+    return this.eventStore.read(String(id));
   }
 
   getArtifact(id, artifactId) {
@@ -133,9 +147,10 @@ export class JobManager {
       if (!FINAL.has(job.status)) this.cancelJob(job.id);
     }
     this.queue = [];
-    this.shutdownPromise = this.activeCount === 0
+    const idle = this.activeCount === 0
       ? Promise.resolve()
       : new Promise(resolve => this.idleWaiters.add(resolve));
+    this.shutdownPromise = idle.then(() => this.eventStore.flush());
     return this.shutdownPromise;
   }
 
@@ -214,6 +229,7 @@ export class JobManager {
         job.exitCode = 1;
         job.error = safeJobError(error);
         this.addLog(job, 'stderr', job.error);
+        job.failure = classifyBuildFailure(job.presetId, job.logs);
         finalStatus = 'failed';
       }
     }
@@ -259,6 +275,7 @@ export class JobManager {
 
   emit(job, event) {
     job.events.emit('event', event);
+    this.eventStore.append(job.id, persistedEvent(job, event, ++job.persistedEventSequence));
   }
 
   pruneRetainedJobs() {
@@ -288,11 +305,21 @@ export class JobManager {
       finishedAt: job.finishedAt,
       exitCode: job.exitCode,
       error: job.error,
+      failure: job.failure,
       currentStep: job.currentStep,
       logs: [...job.logs],
       artifacts: publicArtifacts(job.artifacts),
     };
   }
+}
+
+function persistedEvent(job, event, sequence) {
+  const base = { sequence, timestamp: new Date().toISOString(), type: event.type };
+  if (event.type === 'status') return { ...base, status: event.status };
+  if (event.type === 'step') return { ...base, currentStep: event.currentStep };
+  if (event.type === 'log') return { ...base, log: event.log };
+  if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts };
+  return { ...base, status: job.status, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
 }
 
 export async function resolveGitCommit({ sourceDir, timeoutMs, signal, onLog, runStep = runProcessStep }) {

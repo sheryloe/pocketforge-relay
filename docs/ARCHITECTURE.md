@@ -42,13 +42,23 @@ flowchart TB
 ```
 
 The MVP keeps a bounded number of completed job records in memory and artifacts
-on disk. Waiting work is bounded separately, and active work is never evicted.
-Graceful shutdown stops admission, cancels waiting and active jobs, then waits for
-their process and artifact-finalization paths. The next persistence slice should
-use an append-only event log with a current-state projection. External protocol
+on disk. It also appends bounded, public-safe protocol-v1 events to one regular
+file per job. Authenticated history reads verify the file and ordered records,
+including after restart, but do not restore jobs or resume processes. Waiting
+work is bounded separately, and active work is never evicted. Graceful shutdown
+stops admission, cancels waiting and active jobs, then waits for their process,
+artifact-finalization, and event-flush paths. The next persistence slice should
+add a current-state projection and explicit retention lifecycle. External protocol
 messages should eventually include schema version, stable event type,
 correlation identifiers, authoritative timestamp, and adapter capability
 version.
+
+The local artifact collector calculates SHA-256 through the opened artifact
+handle and publishes that collection-time digest in job state and the download
+response. It rejects identity or metadata drift during hashing. Downloads repeat
+the opened-handle identity, metadata, and SHA-256 checks before sending headers.
+Local artifacts are not yet immutable snapshots, so clients must still verify
+downloaded bytes against the advertised digest.
 
 The optional Actions run manager is a separate in-memory admission and state
 boundary. It accepts only server-configured targets, derives every workspace

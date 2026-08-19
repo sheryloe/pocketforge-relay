@@ -4,6 +4,10 @@
 
 **English** · [한국어](README.ko.md) · [日本語](README.ja.md)
 
+[Working MVP](#working-mvp) ·
+[AI direction](#direction-an-evidence-first-ai-development-loop) ·
+[Contribute](#contributing)
+
 PocketForge Relay is an open-source, mobile-first control plane for starting,
 observing, and verifying software builds from a phone while the actual work runs
 on a local, self-hosted, or cloud runner.
@@ -23,6 +27,65 @@ change -> build -> test -> artifact -> verify -> iterate
 It does not replace Android Studio, VS Code, Termux, Codex, Claude Code, or CI.
 It coordinates those tools through explicit adapters and bounded runner
 capabilities.
+
+Remote shells provide command access, hosted workspaces provide a machine,
+coding agents propose changes, and CI executes workflows. PocketForge Relay
+connects review, bounded execution, and evidence across those categories.
+
+## Direction: an evidence-first AI development loop
+
+AI can propose a patch in seconds, but delivering software still requires a
+trustworthy chain from human intent to exact source, bounded execution,
+artifacts, and runtime evidence. PocketForge Relay aims to make that chain
+inspectable and provider-neutral:
+
+```text
+human intent -> AI-assisted proposal -> explicit review -> allowlisted adapter
+             -> build or device evidence -> human decision -> iterate
+```
+
+The current MVP does **not** include an AI-agent adapter. The target is not an
+autonomous agent with an unrestricted shell; it is a human-governed coordination
+layer where future adapters can:
+
+- triage issues and turn reproducible evidence into a bounded work proposal;
+- classify build and device logs and suggest the next check without silently
+  acting on it;
+- generate adapter conformance tests for unfamiliar build ecosystems;
+- review security-boundary changes and keep translated documentation aligned;
+- draft release notes from executed verification instead of inferred success;
+  and
+- help new contributors find a small, testable path into the project.
+
+Every future AI-assisted action must preserve the relay's core contracts: no
+arbitrary shell text from clients, least capability by default, and explicit
+approval for Actions dispatch, Android installation, and future merge, release,
+or deploy operations. Relay-managed logs receive defensive secret redaction,
+while repository-produced artifacts are trusted-repository output and are not
+guaranteed secret-free. Device evidence requires privacy review before sharing,
+and every result must distinguish `PASS`, `FAIL`, and `NOT RUN` honestly.
+
+AI proposals will be treated as untrusted input and must pass the same
+allowlists and review gates. Sending source, logs, screenshots, or evidence to
+an external AI provider will require explicit operator opt-in; the relay will
+not transmit them by default.
+
+## Open-source plan
+
+- **Now:** prove the mobile request-to-artifact loop, contract-tested and
+  disabled-by-default Actions and Android evidence paths, and EN/KO/JA
+  contributor experience.
+- **Next:** validate a trusted external Node.js project, version the adapter
+  protocol, persist events durably, add failure parsers, and introduce a
+  rootless container boundary.
+- **Later:** support agent-assisted repair branches, signed user/device pairing,
+  provenance, and policy adapters while retaining explicit human approval for
+  install, merge, release, and deploy.
+
+Progress is measured by reproducible pilot reports, useful downstream adapters,
+external contributions, releases, and resolved maintainer issues—not by commit
+count or model branding. See the evidence-driven [`ROADMAP.md`](ROADMAP.md) and
+the [`open-source application brief`](docs/OPEN_SOURCE_APPLICATION.md).
 
 ## Working MVP
 
@@ -140,6 +203,15 @@ Small, reviewable adapters, parsers, examples, tests, security improvements, and
 documentation fixes are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and
 the [`SECURITY.md`](SECURITY.md) reporting policy before contributing. See
 [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md) for translation rules.
+
+Good first contributions include adapter conformance fixtures, failure-parser
+tests, accessibility and localization fixes, and sanitized reproducible pilot
+reports. The maintainer confirms scope before implementation is promised.
+
+[Propose a bounded first issue](https://github.com/sheryloe/pocketforge-relay/issues/new?template=good-first-issue.yml)
+or submit executed evidence through the
+[pilot report form](https://github.com/sheryloe/pocketforge-relay/issues/new?template=pilot-report.yml).
+If scope is unclear, open the proposal before writing a large patch.
 
 ## License
 

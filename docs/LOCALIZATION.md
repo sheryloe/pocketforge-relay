@@ -41,3 +41,7 @@ Machine translation can be used as a draft, not as verification. A pull
 request should name the locale, the reviewed surfaces, and the reviewer or
 testing method. Reviewers should reject translations that weaken a warning,
 invent support, expose a secret, or change a command.
+
+When a README adds or changes a core security, Actions, Android, AI-governance,
+or verification claim, update the EN/KO/JA semantic markers in
+`test/localization-docs.test.mjs` in the same patch.

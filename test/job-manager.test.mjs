@@ -93,6 +93,28 @@ test('resolves a cloned source to one exact commit with fixed git arguments', as
   }),/exact Git commit/);
 });
 
+test('completed job history remains readable after the manager restarts', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-history-'));
+  const first = new JobManager(makeConfig({ dataDir }));
+  let id;
+  try {
+    id = first.createJob({ sourceType: 'demo', presetId: 'demo-web' }).id;
+    await waitForFinal(first, id);
+    await first.shutdown();
+    const second = new JobManager(makeConfig({ dataDir }));
+    try {
+      assert.equal(second.getJob(id), null);
+      const history = await second.getJobHistory(id);
+      assert.equal(history[0].status, 'queued');
+      assert.equal(history.at(-1).type, 'complete');
+      assert.equal(history.at(-1).status, 'succeeded');
+    } finally { await second.shutdown(); }
+  } finally {
+    await first.shutdown();
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
+
 function makeConfig(overrides = {}) {
   return {
     dataDir: overrides.dataDir,
