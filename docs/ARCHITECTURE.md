@@ -55,9 +55,10 @@ version.
 
 The local artifact collector calculates SHA-256 through the opened artifact
 handle and publishes that collection-time digest in job state and the download
-response. It rejects identity or metadata drift during hashing. Local artifacts
-are not yet immutable snapshots, and downloads do not re-hash them; clients must
-verify downloaded bytes against the advertised digest.
+response. It rejects identity or metadata drift during hashing. Downloads repeat
+the opened-handle identity, metadata, and SHA-256 checks before sending headers.
+Local artifacts are not yet immutable snapshots, so clients must still verify
+downloaded bytes against the advertised digest.
 
 The optional Actions run manager is a separate in-memory admission and state
 boundary. It accepts only server-configured targets, derives every workspace

@@ -16,6 +16,7 @@ Before submitting an application, attach observed and dated evidence such as rel
 | 2026-08-13 | Mobile-browser demonstration | EN/KO/JA switching, zero horizontal overflow, zero console errors, and three bundled-demo artifacts at 390 x 844 | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-14 | v0.2 foundation candidate | Syntax checks passed; 122 tests passed and 0 failed with adapter-contract, durable-history, and failure-diagnostic coverage | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-18 | Local artifact integrity candidate | Syntax checks passed; 123 tests passed and 0 failed with collection-time SHA-256 and authenticated download-header coverage | [`VERIFICATION.md`](VERIFICATION.md) |
+| 2026-08-19 | Local artifact download verification | Syntax checks passed; 124 tests passed and 0 failed with pre-download identity, metadata, and SHA-256 checks | [`VERIFICATION.md`](VERIFICATION.md) |
 
 These entries show repository maintenance and local/browser verification. They
 do not establish downloads, active installations, external contributors, or

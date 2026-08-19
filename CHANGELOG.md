@@ -17,6 +17,8 @@ once releases are published.
   failed job state and build summaries.
 - Collection-time SHA-256 digests in local artifact state and authenticated
   download response headers.
+- Pre-download identity, metadata, and SHA-256 verification that rejects changed
+  local artifacts before response headers are sent.
 - Mobile-first installable PWA for starting and observing allowlisted build jobs.
 - Bearer-authenticated API, Server-Sent Events, per-job workspaces, and
   authenticated artifact downloads.

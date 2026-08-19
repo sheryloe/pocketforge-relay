@@ -19,8 +19,9 @@ Android-device execution remain separate `NOT RUN` integration claims.
   projection and interrupted-process recovery remain planned.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
-- Collection-time SHA-256 for local artifacts is implemented; immutable
-  snapshots, signed manifests, and provenance remain planned.
+- Collection-time and pre-download SHA-256 verification for local artifacts is
+  implemented; immutable snapshots, signed manifests, and provenance remain
+  planned.
 - Fixed public diagnostics for common Gradle, npm, and CMake failures are
   implemented; fixture coverage should expand with sanitized pilot evidence.
 - One reproducible pilot against a trusted external Node.js repository.

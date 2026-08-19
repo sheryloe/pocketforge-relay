@@ -57,10 +57,11 @@ The authenticated download repeats that value in `X-Artifact-SHA256`. Collection
 hashes one opened file handle and excludes a file if its identity, size, or
 timestamps change before hashing finishes.
 
-This is collection-time integrity evidence, not an immutable snapshot or signed
-provenance statement. A client should hash the downloaded bytes and treat a
-mismatch as `FAIL`; the relay does not currently re-hash a local artifact before
-each download.
+Before sending response headers, each local-artifact download re-hashes the
+same opened file handle and repeats the identity and metadata checks. A digest
+mismatch returns `409` without serving artifact bytes. This is still not an
+immutable snapshot or signed provenance statement, so a client should hash the
+downloaded bytes and treat a mismatch as `FAIL`.
 
 This pre-1.0 API may change. The remaining target protocol work includes
 versioned request/event envelopes, resumable offsets, signed pairing, runner
