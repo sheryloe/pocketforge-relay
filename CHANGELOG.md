@@ -5,6 +5,11 @@
 - Added authenticated current-state projection from durable job events.
 - The projection is read-only evidence; interrupted process resumption remains `NOT RUN`.
 
+## 2026-08-21
+
+- Added authenticated, explicit deletion for one terminal job event history.
+- Running or otherwise non-terminal histories cannot be deleted through this lifecycle API.
+
 All notable changes to PocketForge Relay will be recorded in this file.
 The project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html)

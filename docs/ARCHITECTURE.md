@@ -1,5 +1,9 @@
 # Architecture
 
+Durable job histories have an explicit retention boundary: only a terminal
+history can be deleted, and the authenticated caller must send the literal
+`delete` decision. The relay never interprets absence of a decision as consent.
+
 PocketForge Relay separates the **control surface** from the **execution surface**. The phone expresses intent, approvals, and review decisions. The relay authenticates, validates, queues, and emits state. Runners execute allowlisted work. Artifact and device adapters return evidence.
 
 ```mermaid
