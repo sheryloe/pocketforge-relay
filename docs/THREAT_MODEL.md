@@ -1,5 +1,9 @@
 # Threat Model
 
+For local downloads, the relay verifies two linked layers: the stable manifest
+file must retain its creation-time SHA-256, and the selected immutable snapshot
+must retain the SHA-256 recorded in that verified manifest.
+
 ## Assets
 Host filesystem, operating-system account, relay token, GitHub credential,
 device-ID secret, evidence-integrity key, checked-out source, APK snapshots,
