@@ -14,6 +14,7 @@ const NO_EVENT_STORE = Object.freeze({
   append: () => Promise.resolve(),
   flush: () => Promise.resolve(),
   read: async () => null,
+  delete: async () => false,
 });
 
 export class JobManager {
@@ -91,6 +92,13 @@ export class JobManager {
   async getJobProjection(id) {
     const events = await this.getJobHistory(id);
     return projectJobEvents(events);
+  }
+
+  async deleteJobHistory(id) {
+    const projection = await this.getJobProjection(id);
+    if (!projection) return false;
+    if (!FINAL.has(projection.status)) throw statusError('Only terminal job history can be deleted.', 409);
+    return this.eventStore.delete(String(id));
   }
 
   getArtifact(id, artifactId) {

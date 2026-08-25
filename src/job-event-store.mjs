@@ -49,6 +49,16 @@ export class JobEventStore {
     } finally { await handle.close(); }
   }
 
+  async delete(jobId) {
+    const file = this.#file(jobId);
+    let before;
+    try { before = await fs.lstat(file); }
+    catch (error) { if (error?.code === 'ENOENT') return false; throw error; }
+    if (!before.isFile() || before.isSymbolicLink()) throw new Error('Job event log is unsafe.');
+    await fs.unlink(file);
+    return true;
+  }
+
   async #append(jobId, event) {
     const file = this.#file(jobId);
     await fs.mkdir(this.root, { recursive: true });
@@ -100,5 +110,6 @@ export function projectJobEvents(events) {
       projection.error = event.error;
     }
   }
+
   return Object.freeze(projection);
 }
