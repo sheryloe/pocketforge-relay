@@ -15,6 +15,7 @@ const NO_EVENT_STORE = Object.freeze({
   flush: () => Promise.resolve(),
   read: async () => null,
   delete: async () => false,
+  listJobIds: async () => [],
 });
 
 export class JobManager {
@@ -100,6 +101,22 @@ export class JobManager {
     if (!projection) return false;
     if (!FINAL.has(projection.status)) throw statusError('Only terminal job history can be deleted.', 409);
     return this.eventStore.delete(String(id));
+  }
+
+  async recoverInterruptedJobs() {
+    let recovered = 0;
+    for (const id of await this.eventStore.listJobIds()) {
+      const events = await this.eventStore.read(id);
+      const projection = projectJobEvents(events);
+      if (!projection || FINAL.has(projection.status)) continue;
+      const sequence = events.at(-1).sequence;
+      const finishedAt = new Date().toISOString();
+      await this.eventStore.append(id, { sequence: sequence + 1, timestamp: finishedAt, type: 'status', status: 'failed' });
+      await this.eventStore.append(id, { sequence: sequence + 2, timestamp: finishedAt, type: 'complete', status: 'failed', finishedAt, exitCode: 1, error: 'Relay restarted before job completion.', interrupted: true });
+      recovered++;
+    }
+    await this.eventStore.flush();
+    return recovered;
   }
 
   async getArtifact(id, artifactId) {
