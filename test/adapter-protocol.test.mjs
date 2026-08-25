@@ -12,6 +12,7 @@ test('advertises one versioned, deterministic descriptor per bounded adapter', (
     { id: 'ai-agent', kind: 'agent', contractVersion: 1, enabled: false },
   ]);
   assert.deepEqual(result.adapters[1].capabilities, ['artifact-zip', 'cancel', 'dispatch', 'status']);
+  assert.deepEqual(result.adapters[3].capabilities, ['evidence-preview', 'explicit-consent', 'structured-proposal']);
 });
 
 test('accepts protocol-v1 envelopes and preserves documented legacy requests', () => {
