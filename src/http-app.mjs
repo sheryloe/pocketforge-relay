@@ -1,7 +1,7 @@
 import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
-import { relayCapabilities } from './adapter-protocol.mjs';
+import { protocolEvent, relayCapabilities, unwrapProtocolRequest } from './adapter-protocol.mjs';
 import { sameFile, sha256Handle } from './artifacts.mjs';
 import { GitHubActionsError } from './github-actions-client.mjs';
 import { ActionApprovalError } from './github-actions-runner.mjs';
@@ -33,7 +33,7 @@ async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,event
   if (url.pathname === '/api/presets' && req.method === 'GET') return json(res,200,{presets:listPresets()});
   if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,relayCapabilities({actionsEnabled:Boolean(actionsManager),deviceEnabled:Boolean(deviceActionsRuntime)}));
   if (url.pathname === '/api/jobs' && req.method === 'GET') return json(res,200,{jobs:manager.listJobs()});
-  if (url.pathname === '/api/jobs' && req.method === 'POST') { const body = await readJson(req,64*1024); try { return json(res,202,{job:manager.createJob(body)}); } catch(e) { return json(res,e.statusCode||400,{error:e.message}); } }
+  if (url.pathname === '/api/jobs' && req.method === 'POST') { const body = await readJson(req,64*1024); try { return json(res,202,{job:manager.createJob(unwrapProtocolRequest(body))}); } catch(e) { return json(res,e.statusCode||400,{error:e.message}); } }
   let m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)$/i); if (m && req.method === 'GET') { const j=manager.getJob(m[1]); return j?json(res,200,{job:j}):json(res,404,{error:'Job not found.'}); }
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/history$/i); if (m && req.method === 'GET') { const events=await manager.getJobHistory(m[1]); return events?json(res,200,{events}):json(res,404,{error:'Job history not found.'}); }
   if (m && req.method === 'DELETE') { const body=await readJson(req,1024); if(body.decision!=='delete') return json(res,400,{error:"decision must be 'delete'."}); const deleted=await manager.deleteJobHistory(m[1]); return deleted?json(res,200,{deleted:true}):json(res,404,{error:'Job history not found.'}); }
@@ -212,6 +212,6 @@ async function sendFile(res,filePath,headers,{sha256}={}) {
 }
 function fileResponseError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 async function readJson(req,max){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}}
-function event(res,name,payload){if(res.destroyed||res.writableEnded)return;res.write(`event: ${name}\n`);res.write(`data: ${JSON.stringify(payload)}\n\n`);}
+function event(res,name,payload){if(res.destroyed||res.writableEnded)return;res.write(`event: ${name}\n`);res.write(`data: ${JSON.stringify(protocolEvent(payload))}\n\n`);}
 function json(res,status,payload){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}
 function text(res,status,body){res.writeHead(status,{'Content-Type':'text/plain; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}

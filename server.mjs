@@ -7,6 +7,7 @@ import { shutdownRelay } from './src/graceful-shutdown.mjs';
 
 const config = loadConfig();
 const manager = new JobManager(config);
+const recoveredJobs = await manager.recoverInterruptedJobs();
 const actionsManager = await createActionsRuntime(config);
 const deviceActionsRuntime = await createDeviceActionRuntime(config);
 const server = createPocketForgeServer({ config, manager, actionsManager, deviceActionsRuntime });
@@ -20,6 +21,7 @@ server.listen(config.port, config.host, () => {
   }
   if (actionsManager) console.log(`GitHub Actions adapter enabled for ${actionsManager.listTargets().length} target(s).`);
   if (deviceActionsRuntime) console.log('Android device actions enabled.');
+  if (recoveredJobs) console.log(`Recorded ${recoveredJobs} interrupted job(s) as failed after restart.`);
 });
 
 let stopping = false;

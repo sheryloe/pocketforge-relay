@@ -38,9 +38,23 @@ test('writes one deterministic versioned manifest with a digest', async () => {
     const artifact = { id: '0', name: 'app.js', relativePath: 'dist/app.js', absolutePath: 'ignored', size: 6, sha256: 'a'.repeat(64), contentType: 'text/javascript' };
     const job = { id: 'job', repository: 'https://github.com/example/repo', ref: 'main', resolvedCommit: 'b'.repeat(40), presetId: 'npm-build' };
     const manifest = await writeArtifactManifest({ job, artifacts: [artifact], snapshotDir: temp });
-    assert.equal(manifest.schemaVersion, 1); assert.match(manifest.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(manifest.schemaVersion, 1); assert.equal(manifest.integrity.algorithm, 'SHA-256'); assert.match(manifest.integrity.manifestSha256, /^[a-f0-9]{64}$/);
     assert.equal(JSON.parse(await fs.readFile(path.join(temp, 'manifest.json'), 'utf8')).artifacts[0].sha256, artifact.sha256);
     await assert.rejects(writeArtifactManifest({ job, artifacts: [artifact], snapshotDir: temp }), /EEXIST/);
+  } finally { await fs.rm(temp, { recursive: true, force: true }); }
+});
+
+test('authenticates a manifest with a dedicated HMAC key', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-manifest-hmac-'));
+  const key = Buffer.alloc(32, 7); const wrongKey = Buffer.alloc(32, 8);
+  try {
+    const job = { id: 'job', repository: null, ref: null, resolvedCommit: null, presetId: 'demo-web' };
+    const manifest = await writeArtifactManifest({ job, artifacts: [], snapshotDir: temp, integrityKey: key });
+    assert.equal(manifest.integrity.algorithm, 'HMAC-SHA256');
+    assert.match(manifest.integrity.manifestHmac, /^[a-f0-9]{64}$/);
+    assert.equal((await verifyArtifactManifest({ manifest, snapshotDir: temp, integrityKey: key })).jobId, 'job');
+    await assert.rejects(verifyArtifactManifest({ manifest, snapshotDir: temp, integrityKey: wrongKey }), /authentication failed/);
+    await assert.rejects(verifyArtifactManifest({ manifest, snapshotDir: temp }), /key is unavailable/);
   } finally { await fs.rm(temp, { recursive: true, force: true }); }
 });
 

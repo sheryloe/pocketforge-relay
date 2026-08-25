@@ -15,6 +15,7 @@ const NO_EVENT_STORE = Object.freeze({
   flush: () => Promise.resolve(),
   read: async () => null,
   delete: async () => false,
+  listJobIds: async () => [],
 });
 
 export class JobManager {
@@ -102,12 +103,28 @@ export class JobManager {
     return this.eventStore.delete(String(id));
   }
 
+  async recoverInterruptedJobs() {
+    let recovered = 0;
+    for (const id of await this.eventStore.listJobIds()) {
+      const events = await this.eventStore.read(id);
+      const projection = projectJobEvents(events);
+      if (!projection || FINAL.has(projection.status)) continue;
+      const sequence = events.at(-1).sequence;
+      const finishedAt = new Date().toISOString();
+      await this.eventStore.append(id, { sequence: sequence + 1, timestamp: finishedAt, type: 'status', status: 'failed' });
+      await this.eventStore.append(id, { sequence: sequence + 2, timestamp: finishedAt, type: 'complete', status: 'failed', finishedAt, exitCode: 1, error: 'Relay restarted before job completion.', interrupted: true });
+      recovered++;
+    }
+    await this.eventStore.flush();
+    return recovered;
+  }
+
   async getArtifact(id, artifactId) {
     const job = this.jobs.get(id);
     const artifact = job?.artifacts.find(candidate => candidate.id === String(artifactId)) || null;
     if (!artifact || !job.artifactManifest) return null;
     const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', job.id);
-    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir });
+    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir, integrityKey: this.config.artifactIntegrityKey });
     const entry = manifest.artifacts.find(candidate => candidate.id === artifact.id);
     const publicArtifact = publicArtifacts([artifact])[0];
     if (!entry || JSON.stringify(entry) !== JSON.stringify(publicArtifact)) throw statusError('Artifact does not match its manifest.', 409);
@@ -267,7 +284,7 @@ export class JobManager {
         maxBytes: this.config.maxArtifactBytes,
       });
       job.artifacts = await snapshotArtifacts({ artifacts: collected, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), maxBytes: this.config.maxArtifactBytes });
-      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id) });
+      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), integrityKey: this.config.artifactIntegrityKey });
       this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts), manifest: job.artifactManifest });
     } catch (error) {
       this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);

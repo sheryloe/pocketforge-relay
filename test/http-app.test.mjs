@@ -53,6 +53,20 @@ test('HTTP API authenticates and accepts demo job', async () => {
   }
 });
 
+test('HTTP API accepts a protocol-v1 job envelope and rejects unknown versions', async () => {
+  const manager = { createJob: body => ({ id: 'job', ...body }) };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/jobs`;
+  const headers = { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' };
+  try {
+    const accepted = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ schemaVersion: 1, payload: { sourceType: 'demo', presetId: 'demo-web' } }) });
+    assert.equal(accepted.status, 202); assert.equal((await accepted.json()).job.presetId, 'demo-web');
+    const rejected = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ schemaVersion: 2, payload: {} }) });
+    assert.equal(rejected.status, 400); assert.match((await rejected.json()).error, /unsupported/);
+  } finally { await closeServer(server); }
+});
+
 test('HTTP API preserves admission-control status codes', async () => {
   const config = {
     publicDir: path.join(root, 'public'),
@@ -171,6 +185,7 @@ test('SSE ends completed snapshots without retaining a subscription', async () =
     assert.equal(response.status, 200);
     const body = await within(response.text());
     assert.match(body, /event: snapshot/);
+    assert.match(body, /"schemaVersion":1/);
     assert.match(body, /"status":"succeeded"/);
   } finally {
     await closeServer(server);

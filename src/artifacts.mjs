@@ -61,7 +61,7 @@ export async function snapshotArtifacts({ artifacts, snapshotDir, maxBytes }) {
   }
   return snapshots;
 }
-export async function writeArtifactManifest({ job, artifacts, snapshotDir }) {
+export async function writeArtifactManifest({ job, artifacts, snapshotDir, integrityKey = null }) {
   const manifest = {
     schemaVersion: 1,
     jobId: job.id,
@@ -72,11 +72,15 @@ export async function writeArtifactManifest({ job, artifacts, snapshotDir }) {
     artifacts: publicArtifacts(artifacts),
   };
   const payload = `${JSON.stringify(manifest)}\n`;
-  const sha256 = crypto.createHash('sha256').update(payload).digest('hex');
-  await fs.writeFile(path.join(snapshotDir, 'manifest.json'), payload, { encoding: 'utf8', flag: 'wx' });
-  return Object.freeze({ ...manifest, sha256 });
+  const manifestSha256 = crypto.createHash('sha256').update(payload).digest('hex');
+  const integrity = integrityKey
+    ? { algorithm: 'HMAC-SHA256', manifestSha256, manifestHmac: crypto.createHmac('sha256', integrityKey).update(payload).digest('hex') }
+    : { algorithm: 'SHA-256', manifestSha256 };
+  const envelope = { ...manifest, integrity };
+  await fs.writeFile(path.join(snapshotDir, 'manifest.json'), `${JSON.stringify(envelope)}\n`, { encoding: 'utf8', flag: 'wx' });
+  return Object.freeze(envelope);
 }
-export async function verifyArtifactManifest({ manifest, snapshotDir }) {
+export async function verifyArtifactManifest({ manifest, snapshotDir, integrityKey = null }) {
   const file = path.join(snapshotDir, 'manifest.json');
   const handle = await fs.open(file, 'r');
   try {
@@ -84,12 +88,24 @@ export async function verifyArtifactManifest({ manifest, snapshotDir }) {
     if (!before.isFile() || before.isSymbolicLink()) throw new Error('Artifact manifest is unsafe.');
     const payload = await handle.readFile('utf8');
     const after = await handle.stat();
-    const digest = crypto.createHash('sha256').update(payload).digest('hex');
-    if (!sameFile(before, after) || digest !== manifest.sha256) throw new Error('Artifact manifest changed after creation.');
     const parsed = JSON.parse(payload);
-    if (parsed.schemaVersion !== 1 || parsed.jobId !== manifest.jobId) throw new Error('Artifact manifest is malformed.');
-    return parsed;
+    if (!sameFile(before, after) || payload !== `${JSON.stringify(parsed)}\n` || JSON.stringify(parsed) !== JSON.stringify(manifest)) throw new Error('Artifact manifest changed after creation.');
+    const { integrity, ...unsigned } = parsed;
+    const unsignedPayload = `${JSON.stringify(unsigned)}\n`;
+    const digest = crypto.createHash('sha256').update(unsignedPayload).digest('hex');
+    if (parsed.schemaVersion !== 1 || parsed.jobId !== manifest.jobId || digest !== integrity?.manifestSha256) throw new Error('Artifact manifest is malformed.');
+    if (integrity.algorithm === 'HMAC-SHA256') {
+      if (!integrityKey) throw new Error('Artifact manifest authentication key is unavailable.');
+      const expected = crypto.createHmac('sha256', integrityKey).update(unsignedPayload).digest('hex');
+      if (!safeHexEqual(expected, integrity.manifestHmac)) throw new Error('Artifact manifest authentication failed.');
+    } else if (integrity.algorithm !== 'SHA-256' || integrityKey) throw new Error('Artifact manifest authentication mode is invalid.');
+    return unsigned;
   } finally { await handle.close(); }
+}
+
+function safeHexEqual(left, right) {
+  if (!/^[a-f0-9]{64}$/.test(left) || !/^[a-f0-9]{64}$/.test(right || '')) return false;
+  return crypto.timingSafeEqual(Buffer.from(left, 'hex'), Buffer.from(right, 'hex'));
 }
 async function walk(root, onFile, results, maxFiles, skipLarge = false) {
   try { const s = await fs.lstat(root); if (!s.isDirectory() || s.isSymbolicLink()) return; } catch { return; }

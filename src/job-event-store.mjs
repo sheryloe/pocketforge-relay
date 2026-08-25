@@ -59,6 +59,21 @@ export class JobEventStore {
     return true;
   }
 
+  async listJobIds() {
+    let root;
+    try { root = await fs.lstat(this.root); }
+    catch (error) { if (error?.code === 'ENOENT') return []; throw error; }
+    if (!root.isDirectory() || root.isSymbolicLink()) throw new Error('Job event store root is unsafe.');
+    const entries = await fs.readdir(this.root, { withFileTypes: true });
+    const ids = [];
+    for (const entry of entries) {
+      const match = entry.name.match(/^([0-9a-f-]{36})\.jsonl$/i);
+      if (!entry.isFile() || !match || !JOB_ID.test(match[1])) throw new Error('Job event store contains an unexpected entry.');
+      ids.push(match[1]);
+    }
+    return ids.sort();
+  }
+
   async #append(jobId, event) {
     const file = this.#file(jobId);
     await fs.mkdir(this.root, { recursive: true });
@@ -97,7 +112,7 @@ export class JobEventStore {
 
 export function projectJobEvents(events) {
   if (!Array.isArray(events) || events.length === 0) return null;
-  const projection = { jobId: events[0].jobId, status: null, currentStep: null, finishedAt: null, exitCode: null, error: null, artifacts: [], artifactManifest: null };
+  const projection = { jobId: events[0].jobId, status: null, currentStep: null, finishedAt: null, exitCode: null, error: null, interrupted: false, artifacts: [], artifactManifest: null };
   for (const event of events) {
     if (event.type === 'status') projection.status = event.status;
     if (event.type === 'step') projection.currentStep = event.currentStep;
@@ -108,6 +123,7 @@ export function projectJobEvents(events) {
       projection.finishedAt = event.finishedAt;
       projection.exitCode = event.exitCode;
       projection.error = event.error;
+      projection.interrupted = event.interrupted === true;
     }
   }
 

@@ -16,6 +16,14 @@ test('uses bounded defaults when optional settings are absent', () => {
   assert.equal(config.token.length, 32);
   assert.deepEqual(config.actions, { enabled: false, githubToken: null, targetsFile: null });
   assert.equal(config.deviceActions.enabled, false);
+  assert.equal(config.artifactIntegrityKey, null);
+});
+
+test('accepts only a canonical 32-byte artifact integrity key', () => {
+  const encoded = Buffer.alloc(32, 9).toString('base64url');
+  assert.deepEqual(loadConfig({ POCKETFORGE_ARTIFACT_INTEGRITY_KEY: encoded }).artifactIntegrityKey, Buffer.alloc(32, 9));
+  assert.throws(() => loadConfig({ POCKETFORGE_ARTIFACT_INTEGRITY_KEY: 'short' }), /at least 32 bytes/);
+  assert.throws(() => loadConfig({ POCKETFORGE_ARTIFACT_INTEGRITY_KEY: 'not+base64' }), /canonical base64url/);
 });
 
 test('enables Android device actions only with absolute tools, store, and decoded secrets', () => {

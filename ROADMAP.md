@@ -15,13 +15,14 @@ Android-device execution remain separate `NOT RUN` integration claims.
 ## v0.2 - Durable trust foundation (next)
 
 - Versioned protocol schema and adapter contracts.
-- Append-only event persistence, restart-readable audit history, and an
-  authenticated current-state projection are implemented. Interrupted running
-  processes are not resumed after restart and remain planned.
+- Append-only event persistence, restart-readable audit history, authenticated
+  current-state projection, and startup finalization of interrupted histories
+  are implemented. Orphaned OS processes are never resumed.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
-- Collection-time and pre-download SHA-256 verification plus relay-owned local
-  snapshots are implemented; signed manifests and external provenance remain planned.
+- Collection-time and pre-download SHA-256 verification, relay-owned local
+  snapshots, and optional dedicated-key HMAC-SHA256 manifests are implemented.
+  External build-service provenance remains planned.
 - Fixed public diagnostics for common Gradle, npm, and CMake failures are
   implemented; fixture coverage should expand with sanitized pilot evidence.
 - One reproducible, dependency-free syntax/API pilot against a commit-pinned
@@ -33,9 +34,9 @@ recovery tests, non-root/default-deny/resource-limit container checks, and a
 sanitized pilot report recording a pinned commit, clean checkout, commands,
 exit codes, and artifact digests.
 
-The adapter descriptor and capability-negotiation slice of the first item is
-implemented as contract version 1. Versioned request/event envelopes remain
-planned and are not represented as complete.
+The adapter descriptor, capability negotiation, versioned job-request envelope,
+and versioned SSE payload slices are implemented as protocol version 1. The
+documented legacy job request remains compatible.
 
 ## v0.3 - Human-governed agent loop (target)
 

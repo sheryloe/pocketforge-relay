@@ -17,6 +17,7 @@ silently falling back.
 | `MAX_LOG_LINES` | `4000` | Integer from 100 to 20000 |
 | `MAX_ARTIFACT_FILES` | `100` | Integer from 1 to 1000 |
 | `MAX_ARTIFACT_BYTES` | `26214400` | Integer from 1024 to 262144000 |
+| `POCKETFORGE_ARTIFACT_INTEGRITY_KEY` | Disabled | Canonical base64url encoding of at least 32 random bytes |
 | `POCKETFORGE_ACTIONS_TARGETS_FILE` | Disabled | Path to the server-owned Actions target JSON catalog |
 | `POCKETFORGE_GITHUB_TOKEN` | Disabled | Non-empty GitHub token, no surrounding whitespace or line breaks, at most 4096 characters |
 | `POCKETFORGE_ADB_PATH` | Disabled | Absolute path to `adb` |
@@ -30,6 +31,11 @@ silently falling back.
 For repeatable use, set `POCKETFORGE_TOKEN` explicitly. When it is omitted, the
 server prints a new random token at startup. Binding `HOST=0.0.0.0` exposes the
 service to the local network; only do this on a trusted network.
+
+`POCKETFORGE_ARTIFACT_INTEGRITY_KEY` is independent of the bearer token. When
+configured, it authenticates local artifact manifests with HMAC-SHA256 and must
+remain stable for the evidence lifetime. When omitted, manifests explicitly use
+digest-only SHA-256 mode.
 
 `MAX_QUEUED_JOBS` limits waiting work; a full queue rejects new jobs with HTTP
 429. `MAX_RETAINED_JOBS` limits completed in-memory job records. Active and
