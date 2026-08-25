@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeBuildSummary } from './artifacts.mjs';
 import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
@@ -251,12 +251,13 @@ export class JobManager {
     job.finishedSequence = ++this.finishedSequence;
     try {
       await writeBuildSummary(job, sourceDir, finalStatus);
-      job.artifacts = await collectArtifacts({
+      const collected = await collectArtifacts({
         sourceDir,
         preset,
         maxFiles: this.config.maxArtifactFiles,
         maxBytes: this.config.maxArtifactBytes,
       });
+      job.artifacts = await snapshotArtifacts({ artifacts: collected, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), maxBytes: this.config.maxArtifactBytes });
       this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts) });
     } catch (error) {
       this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);
