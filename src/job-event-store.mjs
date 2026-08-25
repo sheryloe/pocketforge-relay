@@ -84,3 +84,21 @@ export class JobEventStore {
     return path.join(this.root, `${jobId}.jsonl`);
   }
 }
+
+export function projectJobEvents(events) {
+  if (!Array.isArray(events) || events.length === 0) return null;
+  const projection = { jobId: events[0].jobId, status: null, currentStep: null, finishedAt: null, exitCode: null, error: null, artifacts: [] };
+  for (const event of events) {
+    if (event.type === 'status') projection.status = event.status;
+    if (event.type === 'step') projection.currentStep = event.currentStep;
+    if (event.type === 'artifacts') projection.artifacts = event.artifacts;
+    if (event.type === 'complete') {
+      projection.status = event.status;
+      projection.currentStep = null;
+      projection.finishedAt = event.finishedAt;
+      projection.exitCode = event.exitCode;
+      projection.error = event.error;
+    }
+  }
+  return Object.freeze(projection);
+}

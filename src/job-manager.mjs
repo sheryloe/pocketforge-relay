@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
-import { JobEventStore } from './job-event-store.mjs';
+import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
@@ -86,6 +86,11 @@ export class JobManager {
 
   getJobHistory(id) {
     return this.eventStore.read(String(id));
+  }
+
+  async getJobProjection(id) {
+    const events = await this.getJobHistory(id);
+    return projectJobEvents(events);
   }
 
   getArtifact(id, artifactId) {
