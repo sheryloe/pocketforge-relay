@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -173,6 +174,93 @@ test('manager keeps a remote terminal result non-terminal until evidence finaliz
     const completed = await waitFor(() => manager.getRun(runId)?.finishedAt && manager.getRun(runId));
     assert.equal(completed.status, 'succeeded');
   } finally { releaseEvidence(); await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
+});
+
+test('manager restores completed Actions state and artifact downloads after restart', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-actions-recover-'));
+  const bytes = Buffer.from('durable evidence');
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+  const adapter = fakeAdapter({
+    runApproved: async input => {
+      const remoteDir = path.join(input.workspace, 'remote');
+      await fs.mkdir(remoteDir);
+      const absolutePath = path.join(remoteDir, 'evidence.zip');
+      await fs.writeFile(absolutePath, bytes);
+      return {
+        jobId: input.jobId, label: 'Durable', targetId: 'android-debug', repository: 'https://github.com/example/mobile',
+        ref: 'main', workflow: 'android.yml', status: 'succeeded', remoteRunId: 42,
+        remoteUrl: 'https://github.com/example/mobile/actions/runs/42', remoteStatus: 'completed',
+        remoteConclusion: 'success', errorCode: null, error: null,
+        artifacts: [{ id: '0', name: 'evidence.zip', relativePath: 'remote/evidence.zip', absolutePath, size: bytes.length, contentType: 'application/zip', sha256, githubDigest: null, sourceName: 'evidence' }],
+      };
+    },
+  });
+  const first = new ActionRunManager({ adapter, dataDir, maxLogLines: 100, randomId: () => runId });
+  let second;
+  try {
+    const approval = first.createApproval({ targetId: 'android-debug', ref: 'main', label: 'Durable' });
+    first.createRun({ approvalId: approval.id, decision: 'approve' });
+    await waitFor(() => first.getRun(runId)?.finishedAt);
+    await first.shutdown();
+
+    second = new ActionRunManager({ adapter, dataDir, maxLogLines: 100 });
+    await second.initialize();
+    const recovered = second.getRun(runId);
+    assert.equal(recovered.status, 'succeeded');
+    assert.equal(recovered.label, 'Durable');
+    assert.equal(recovered.artifacts[0].sha256, sha256);
+    assert.equal(second.getArtifact(runId, '0').absolutePath, path.join(dataDir, 'action-runs', runId, 'remote', 'evidence.zip'));
+    const eventFile = path.join(dataDir, 'action-run-events', `${runId}.jsonl`);
+    const durableText = await fs.readFile(eventFile, 'utf8');
+    assert.equal(durableText.includes(githubToken), false);
+    assert.equal(durableText.includes(path.join(dataDir, 'action-runs')), false);
+    await second.shutdown();
+    second = null;
+    await fs.writeFile(eventFile, durableText.replace('remote/evidence.zip', '../evidence.zip'));
+    const unsafe = new ActionRunManager({ adapter, dataDir, maxLogLines: 100 });
+    await assert.rejects(unsafe.initialize(), /artifact is malformed/);
+    await unsafe.shutdown();
+  } finally {
+    await first.shutdown();
+    if (second) await second.shutdown();
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('restart marks an unfinished Actions observation as needs attention without replay', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-actions-interrupted-'));
+  let release;
+  let dispatches = 0;
+  const gate = new Promise(resolve => { release = resolve; });
+  const adapter = fakeAdapter({
+    runApproved: async input => {
+      dispatches++;
+      await input.onEvent({ type: 'remote', runId: 42, htmlUrl: 'https://github.com/example/mobile/actions/runs/42' });
+      await gate;
+      return { jobId: input.jobId, label: '', targetId: 'android-debug', repository: 'https://github.com/example/mobile', ref: 'main', workflow: 'android.yml', status: 'succeeded', remoteRunId: 42, remoteUrl: 'https://github.com/example/mobile/actions/runs/42', remoteStatus: 'completed', remoteConclusion: 'success', artifacts: [], errorCode: null, error: null };
+    },
+  });
+  const first = new ActionRunManager({ adapter, dataDir, maxLogLines: 100, randomId: () => runId });
+  let second;
+  try {
+    const approval = first.createApproval({ targetId: 'android-debug', ref: 'main' });
+    first.createRun({ approvalId: approval.id, decision: 'approve' });
+    await waitFor(() => first.getRun(runId)?.remoteRunId === 42);
+    await first.eventStore.flush();
+
+    second = new ActionRunManager({ adapter, dataDir, maxLogLines: 100 });
+    await second.initialize();
+    const recovered = second.getRun(runId);
+    assert.equal(recovered.status, 'needs_attention');
+    assert.equal(recovered.errorCode, 'relay_restarted');
+    assert.match(recovered.error, /restarted/);
+    assert.equal(dispatches, 1);
+  } finally {
+    release();
+    await first.shutdown();
+    if (second) await second.shutdown();
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
 });
 
 function fakeAdapter(overrides = {}) {

@@ -4,10 +4,14 @@ import path from 'node:path';
 import { loadActionTargets } from './action-targets.mjs';
 import { GitHubActionsClient } from './github-actions-client.mjs';
 import { ActionApprovalError, GitHubActionsRunnerAdapter } from './github-actions-runner.mjs';
+import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { createLogRedactor } from './security.mjs';
 
 const FINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'needs_attention']);
+const RUN_STATUSES = new Set(['dispatching', 'queued', 'running', 'collecting_evidence', ...FINAL_STATUSES]);
 const RUN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SHA256 = /^[0-9a-f]{64}$/;
+const REMOTE_ARTIFACT = /^remote\/([A-Za-z0-9][A-Za-z0-9._-]{0,199})$/;
 
 export async function createActionsRuntime(config, { fetchImpl } = {}) {
   if (!config?.actions?.enabled) return null;
@@ -19,7 +23,7 @@ export async function createActionsRuntime(config, { fetchImpl } = {}) {
     maxArtifactFiles: Math.min(config.maxArtifactFiles ?? 100, 100),
     maxArtifactBytes: config.maxArtifactBytes ?? 25 * 1024 * 1024,
   });
-  return new ActionRunManager({
+  const manager = new ActionRunManager({
     adapter,
     dataDir: config.dataDir,
     maxConcurrentRuns: config.maxConcurrentJobs ?? 1,
@@ -27,6 +31,8 @@ export async function createActionsRuntime(config, { fetchImpl } = {}) {
     maxLogLines: config.maxLogLines ?? 4_000,
     secrets: [config.token, config.actions.githubToken],
   });
+  await manager.initialize();
+  return manager;
 }
 
 export class ActionRunManager {
@@ -39,6 +45,7 @@ export class ActionRunManager {
     secrets = [],
     now = Date.now,
     randomId = crypto.randomUUID,
+    eventStore,
   } = {}) {
     if (!adapter || ['listTargets', 'createApproval', 'runApproved', 'cancelRemote'].some(method => typeof adapter[method] !== 'function')) {
       throw new Error('A complete GitHub Actions runner adapter is required.');
@@ -50,6 +57,7 @@ export class ActionRunManager {
     if (typeof now !== 'function' || typeof randomId !== 'function') throw new Error('Action run clock and id generator must be functions.');
     this.adapter = adapter;
     this.runRoot = path.join(dataDir, 'action-runs');
+    this.eventStore = eventStore || new JobEventStore(path.join(dataDir, 'action-run-events'));
     this.maxConcurrentRuns = maxConcurrentRuns;
     this.maxRetainedRuns = maxRetainedRuns;
     this.maxLogLines = maxLogLines;
@@ -63,6 +71,21 @@ export class ActionRunManager {
     this.stopped = false;
     this.shutdownPromise = null;
     fs.mkdirSync(this.runRoot, { recursive: true });
+  }
+
+  async initialize() {
+    const ids = await this.eventStore.listJobIds();
+    const recovered = [];
+    for (const id of ids) {
+      const events = await this.eventStore.read(id);
+      const projection = projectJobEvents(events);
+      if (!projection) continue;
+      recovered.push(this.recoverRun(id, projection, events.at(-1).sequence));
+    }
+    recovered.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    for (const run of recovered.slice(0, this.maxRetainedRuns)) this.runs.set(run.id, run);
+    await this.eventStore.flush();
+    return this;
   }
 
   listTargets() {
@@ -122,10 +145,12 @@ export class ActionRunManager {
       logs: [],
       artifacts: [],
       eventSequence: 0,
+      durableSequence: 0,
       controller: new AbortController(),
       finishedSequence: null,
     };
     this.runs.set(id, run);
+    this.persist(run, 'status', { status: run.status });
 
     let operation;
     try {
@@ -195,7 +220,7 @@ export class ActionRunManager {
       if (!run.finishedAt) run.controller.abort();
     }
     this.approvals.clear();
-    this.shutdownPromise = Promise.allSettled([...this.tasks]).then(() => {});
+    this.shutdownPromise = Promise.allSettled([...this.tasks]).then(() => this.eventStore.flush());
     return this.shutdownPromise;
   }
 
@@ -210,15 +235,18 @@ export class ActionRunManager {
       if (typeof event.remoteUrl === 'string') run.remoteUrl = event.remoteUrl;
       if (typeof event.errorCode === 'string') run.errorCode = event.errorCode;
       if (typeof event.error === 'string') run.error = this.redactLog(event.error);
+      this.persist(run, 'status', { status: run.status });
       return;
     }
     if (event.type === 'remote') {
       if (Number.isSafeInteger(event.runId) && event.runId > 0) run.remoteRunId = event.runId;
       if (typeof event.htmlUrl === 'string') run.remoteUrl = event.htmlUrl;
+      this.persist(run, 'status', { status: run.status });
       return;
     }
     if (event.type === 'step') {
       run.currentStep = typeof event.currentStep === 'string' ? event.currentStep.slice(0, 500) : null;
+      this.persist(run, 'step', { currentStep: run.currentStep });
       return;
     }
     if (event.type === 'log') this.addLog(run, event.channel, event.message);
@@ -247,6 +275,8 @@ export class ActionRunManager {
     run.currentStep = null;
     run.finishedAt = new Date(this.now()).toISOString();
     run.finishedSequence = ++this.finishedSequence;
+    this.persist(run, 'artifacts', { artifacts: run.artifacts.map(publicArtifact), manifest: null });
+    this.persist(run, 'complete', { status: run.status, finishedAt: run.finishedAt, exitCode: null, error: run.error, interrupted: false });
   }
 
   failRun(run, error) {
@@ -262,18 +292,21 @@ export class ActionRunManager {
     run.currentStep = null;
     run.finishedAt = new Date(this.now()).toISOString();
     run.finishedSequence = ++this.finishedSequence;
+    this.persist(run, 'complete', { status: run.status, finishedAt: run.finishedAt, exitCode: null, error: run.error, interrupted: false });
   }
 
   addLog(run, channel, message) {
     const text = this.redactLog(String(message ?? '').replace(/\u0000/g, '')).slice(0, 16_000);
     if (!text) return;
-    run.logs.push({
+    const log = {
       sequence: ++run.eventSequence,
       timestamp: new Date(this.now()).toISOString(),
       channel: ['stdout', 'stderr', 'system'].includes(channel) ? channel : 'system',
       message: text,
-    });
+    };
+    run.logs.push(log);
     if (run.logs.length > this.maxLogLines) run.logs.splice(0, run.logs.length - this.maxLogLines);
+    this.persist(run, 'log', { log: { ...log } });
   }
 
   pruneApprovals() {
@@ -314,6 +347,90 @@ export class ActionRunManager {
       artifacts: run.artifacts.map(publicArtifact),
     };
   }
+
+  persist(run, type, extra) {
+    this.eventStore.append(run.id, {
+      type,
+      sequence: ++run.durableSequence,
+      job: durableRun(run),
+      ...extra,
+    });
+  }
+
+  recoverRun(id, projection, durableSequence) {
+    validateRecoveredRun(id, projection);
+    const workspace = path.join(this.runRoot, id);
+    const workspaceStat = fs.lstatSync(workspace);
+    if (!workspaceStat.isDirectory() || workspaceStat.isSymbolicLink()) throw new Error('Recovered Actions workspace is unsafe.');
+    const artifacts = projection.artifacts.map(artifact => recoverArtifact(workspace, artifact));
+    const wasTerminal = FINAL_STATUSES.has(projection.status) && typeof projection.finishedAt === 'string';
+    const run = {
+      ...projection,
+      id,
+      status: wasTerminal ? projection.status : 'needs_attention',
+      finishedAt: wasTerminal ? projection.finishedAt : new Date(this.now()).toISOString(),
+      currentStep: null,
+      errorCode: wasTerminal ? projection.errorCode : 'relay_restarted',
+      error: wasTerminal ? projection.error : 'Relay restarted before GitHub Actions evidence finalization.',
+      logs: projection.logs.slice(-this.maxLogLines).map(log => ({ ...log })),
+      artifacts,
+      eventSequence: projection.logs.reduce((highest, log) => Math.max(highest, log.sequence || 0), 0),
+      durableSequence,
+      controller: new AbortController(),
+      finishedSequence: ++this.finishedSequence,
+    };
+    if (!wasTerminal) {
+      this.persist(run, 'complete', { status: run.status, finishedAt: run.finishedAt, exitCode: null, error: run.error, interrupted: true });
+    }
+    return run;
+  }
+}
+
+function durableRun(run) {
+  const { logs, artifacts, ...record } = run;
+  return {
+    id: record.id, label: record.label, targetId: record.targetId,
+    repository: record.repository, ref: record.ref, workflow: record.workflow,
+    status: record.status, createdAt: record.createdAt, startedAt: record.startedAt,
+    finishedAt: record.finishedAt, currentStep: record.currentStep,
+    remoteRunId: record.remoteRunId, remoteUrl: record.remoteUrl,
+    remoteStatus: record.remoteStatus, remoteConclusion: record.remoteConclusion,
+    cancelRequested: record.cancelRequested, errorCode: record.errorCode, error: record.error,
+  };
+}
+
+function validateRecoveredRun(id, run) {
+  if (run.id !== id || !RUN_STATUSES.has(run.status)
+    || !validText(run.label, 500) || !validText(run.targetId, 100)
+    || !validText(run.repository, 500) || !validText(run.ref, 300) || !validText(run.workflow, 200)
+    || !validTimestamp(run.createdAt) || !validTimestamp(run.startedAt)
+    || (run.finishedAt !== null && !validTimestamp(run.finishedAt))
+    || (run.remoteRunId !== null && (!Number.isSafeInteger(run.remoteRunId) || run.remoteRunId < 1))
+    || (run.remoteUrl !== null && !validText(run.remoteUrl, 1_000))
+    || typeof run.cancelRequested !== 'boolean' || !Array.isArray(run.logs) || !Array.isArray(run.artifacts)) {
+    throw new Error('Recovered Actions run is malformed.');
+  }
+}
+
+function recoverArtifact(workspace, artifact) {
+  const match = typeof artifact?.relativePath === 'string' && artifact.relativePath.match(REMOTE_ARTIFACT);
+  if (!match || artifact.name !== match[1] || !/^\d+$/.test(String(artifact.id))
+    || !Number.isSafeInteger(artifact.size) || artifact.size < 0 || !SHA256.test(artifact.sha256)
+    || !validText(artifact.contentType, 100) || !validText(artifact.sourceName, 200)) {
+    throw new Error('Recovered Actions artifact is malformed.');
+  }
+  const absolutePath = path.join(workspace, 'remote', match[1]);
+  const stat = fs.lstatSync(absolutePath);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== artifact.size) throw new Error('Recovered Actions artifact is unsafe or changed.');
+  return { ...artifact, absolutePath };
+}
+
+function validText(value, max) {
+  return typeof value === 'string' && value.length <= max && !value.includes('\u0000');
+}
+
+function validTimestamp(value) {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
 function publicArtifact(artifact) {

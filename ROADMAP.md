@@ -20,7 +20,8 @@ remains `NOT RUN`. Physical Android-device execution also remains `NOT RUN`.
 - Versioned protocol schema and adapter contracts.
 - Append-only event persistence, restart-readable audit history, authenticated
   current-state projection, and startup finalization of interrupted histories
-  are implemented. Orphaned OS processes are never resumed.
+  are implemented for local and Actions runs. Orphaned OS processes and remote
+  Actions observations are never resumed or redispatched.
 - An opt-in digest-pinned container boundary now wraps fixed preset steps with
   non-root execution, no network, read-only rootfs, dropped capabilities, and
   CPU/memory/PID/tmpfs limits. Real daemon execution remains `NOT RUN` here.
