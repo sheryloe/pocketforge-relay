@@ -6,7 +6,7 @@ the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-25
+Latest automated rerun: 2026-08-26
 
 ## Environment
 
@@ -24,7 +24,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 153 passed, 0 failed
+- Automated tests: 154 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -38,7 +38,7 @@ npm test
   CPU, memory, PID, and tmpfs argument contract: PASS
 - Clean remote clone at `f19848e4f9153fc2bc681a6e0c497898b5ddf237`,
   `npm ci --ignore-scripts`, and 145-test upstream self-pilot: PASS
-- Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
+- Focused GitHub Actions core and HTTP integration suite: 29 passed, 0 failed
 - Live allowlisted GitHub Actions dispatch and conclusion polling: PASS
   ([run 32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748))
 - Live run-log ZIP and required `relay-evidence` ZIP collection: PASS
@@ -70,6 +70,8 @@ npm test
 - Authenticated Actions target, approval, run, cancellation, and artifact routes: PASS
 - Actions server-owned workspace and public secret/path omission: PASS
 - Actions active-run capacity, cancellation, and abort-and-wait shutdown: PASS
+- Actions terminal-result deferral until evidence finalization: PASS
+- Actions artifact download digest header and pre-header tamper rejection: PASS
 - Android device integration disabled-by-default and all-or-none configuration: PASS
 - Android tool paths and independent 32-byte secret validation: PASS
 - Succeeded-job and APK-only server-side artifact resolution: PASS
