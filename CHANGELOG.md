@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-25 - v0.3 live hosted evidence
+
+- Add a commit-pinned hosted evidence workflow and exact public-repository
+  target catalog.
+- Bound artifact-list rechecks after GitHub's observed post-completion
+  publication lag without ever retrying dispatch.
+- Complete live relay approval, dispatch, polling, log ZIP collection, required
+  artifact ZIP collection, and SHA-256 re-download verification in run
+  [32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748).
+- Keep live cancellation, private repositories, Android SDK, and physical
+  devices explicit as `NOT RUN`.
+
 ## 2026-08-25 - v0.2 container boundary
 
 - Add an opt-in, digest-pinned container wrapper for fixed preset steps with a

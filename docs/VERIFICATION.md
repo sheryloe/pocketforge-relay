@@ -24,7 +24,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 148 passed, 0 failed
+- Automated tests: 151 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -39,6 +39,12 @@ npm test
 - Clean remote clone at `f19848e4f9153fc2bc681a6e0c497898b5ddf237`,
   `npm ci --ignore-scripts`, and 145-test upstream self-pilot: PASS
 - Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
+- Live allowlisted GitHub Actions dispatch and conclusion polling: PASS
+  ([run 32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748))
+- Live run-log ZIP and required `relay-evidence` ZIP collection: PASS
+- Relay evidence re-download SHA-256: PASS
+  (`9c0a259c9245689c1548bcd4bb2d41ff525f1dea51510db3a6abc464f6f3eb98`)
+- Live GitHub Actions cancellation: `NOT RUN`
 - Focused hardening regression suite: 20 of 20 repeated runs passed
 - Bundled demo process execution: PASS
 - Demo artifact collection: PASS
@@ -118,7 +124,7 @@ temporary local workspaces; they do not contact GitHub.
 - A real Android Gradle build with Android SDK/JDK toolchains
 - A real CMake project build with project-specific native toolchains
 - Cross-device LAN access from a physical phone
-- Live GitHub Actions dispatch, cancellation, polling, log download, and artifact download
+- Live GitHub Actions cancellation and private-repository access
 - Real `adb`, `apkanalyzer`, and `apksigner` process execution
 - Physical-device discovery and authorization
 - APK installation and launch on a physical device

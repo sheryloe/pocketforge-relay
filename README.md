@@ -195,14 +195,15 @@ localization parity with fakes and local fixtures. It does **not** establish:
 - a real Android SDK/JDK build;
 - installation, launch, logcat, crash, or screenshot capture on a physical
   Android device;
-- a live GitHub Actions dispatch, cancellation, or remote artifact download;
+- live GitHub Actions cancellation or private-repository access;
 - a real project-specific native CMake build;
 - multi-user authorization, private-repository access, or safe public-internet
   exposure.
 
-Real Android SDK/device checks and live GitHub Actions checks are **NOT RUN** in
-the current verification environment. They must not be represented as working
-from unit-test evidence alone.
+One allowlisted public-repository workflow was dispatched and observed live,
+and its log/evidence ZIPs were downloaded and digest-checked through the relay.
+Live cancellation remains `NOT RUN`. Real Android SDK/device checks are also
+`NOT RUN` and must not be inferred from contract tests.
 
 ## Contributing
 
