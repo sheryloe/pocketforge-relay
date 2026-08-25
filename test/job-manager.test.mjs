@@ -115,6 +115,22 @@ test('completed job history remains readable after the manager restarts', async 
   }
 });
 
+test('startup finalizes a durable non-terminal history as interrupted', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-interrupted-'));
+  const manager = new JobManager(makeConfig({ dataDir }));
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  try {
+    await manager.eventStore.append(id, { sequence: 1, timestamp: '2026-08-25T00:00:00.000Z', type: 'status', status: 'running' });
+    await manager.eventStore.flush();
+    assert.equal(await manager.recoverInterruptedJobs(), 1);
+    const projection = await manager.getJobProjection(id);
+    assert.equal(projection.status, 'failed');
+    assert.equal(projection.interrupted, true);
+    assert.equal(projection.error, 'Relay restarted before job completion.');
+    assert.equal(await manager.recoverInterruptedJobs(), 0);
+  } finally { await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
+});
+
 function makeConfig(overrides = {}) {
   return {
     dataDir: overrides.dataDir,
