@@ -12,6 +12,15 @@ function intEnv(name, value, fallback, min, max) {
   return parsed;
 }
 
+function optionalSecret(env, name, minimumBytes) {
+  const value = env[name];
+  if (value === undefined || value === '') return null;
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]+$/.test(value)) throw new Error(`${name} must be canonical base64url text.`);
+  const decoded = Buffer.from(value, 'base64url');
+  if (decoded.toString('base64url') !== value || decoded.length < minimumBytes) throw new Error(`${name} must decode to at least ${minimumBytes} bytes.`);
+  return decoded;
+}
+
 function actionsConfig(env) {
   const token = env.POCKETFORGE_GITHUB_TOKEN;
   const targetsFile = env.POCKETFORGE_ACTIONS_TARGETS_FILE;
@@ -68,25 +77,14 @@ function deviceActionsConfig(env) {
     }
     return path.resolve(value);
   };
-  const secret = (name, minimumBytes) => {
-    const value = env[name];
-    if (typeof value !== 'string' || !/^[A-Za-z0-9_-]+$/.test(value)) {
-      throw new Error(`${name} must be canonical base64url text.`);
-    }
-    const decoded = Buffer.from(value, 'base64url');
-    if (decoded.toString('base64url') !== value || decoded.length < minimumBytes) {
-      throw new Error(`${name} must decode to at least ${minimumBytes} bytes.`);
-    }
-    return decoded;
-  };
   return Object.freeze({
     enabled: true,
     adbPath: absolutePath('POCKETFORGE_ADB_PATH'),
     apkanalyzerPath: absolutePath('POCKETFORGE_APKANALYZER_PATH'),
     apksignerPath: absolutePath('POCKETFORGE_APKSIGNER_PATH'),
     actionStoreRoot: absolutePath('POCKETFORGE_DEVICE_ACTION_STORE_ROOT'),
-    deviceIdSecret: secret('POCKETFORGE_DEVICE_ID_SECRET', 32),
-    evidenceIntegrityKey: secret('POCKETFORGE_EVIDENCE_INTEGRITY_KEY', 32),
+    deviceIdSecret: optionalSecret(env, 'POCKETFORGE_DEVICE_ID_SECRET', 32),
+    evidenceIntegrityKey: optionalSecret(env, 'POCKETFORGE_EVIDENCE_INTEGRITY_KEY', 32),
     maxConcurrentActions: intEnv('MAX_CONCURRENT_DEVICE_ACTIONS', env.MAX_CONCURRENT_DEVICE_ACTIONS, 1, 1, 4),
   });
 }
@@ -117,6 +115,7 @@ export function loadConfig(env = process.env) {
     maxLogLines: intEnv('MAX_LOG_LINES', env.MAX_LOG_LINES, 4_000, 100, 20_000),
     maxArtifactFiles: intEnv('MAX_ARTIFACT_FILES', env.MAX_ARTIFACT_FILES, 100, 1, 1_000),
     maxArtifactBytes: intEnv('MAX_ARTIFACT_BYTES', env.MAX_ARTIFACT_BYTES, 25 * 1024 * 1024, 1_024, 250 * 1024 * 1024),
+    artifactIntegrityKey: optionalSecret(env, 'POCKETFORGE_ARTIFACT_INTEGRITY_KEY', 32),
     actions,
     deviceActions,
   });

@@ -124,7 +124,7 @@ export class JobManager {
     const artifact = job?.artifacts.find(candidate => candidate.id === String(artifactId)) || null;
     if (!artifact || !job.artifactManifest) return null;
     const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', job.id);
-    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir });
+    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir, integrityKey: this.config.artifactIntegrityKey });
     const entry = manifest.artifacts.find(candidate => candidate.id === artifact.id);
     const publicArtifact = publicArtifacts([artifact])[0];
     if (!entry || JSON.stringify(entry) !== JSON.stringify(publicArtifact)) throw statusError('Artifact does not match its manifest.', 409);
@@ -284,7 +284,7 @@ export class JobManager {
         maxBytes: this.config.maxArtifactBytes,
       });
       job.artifacts = await snapshotArtifacts({ artifacts: collected, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), maxBytes: this.config.maxArtifactBytes });
-      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id) });
+      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), integrityKey: this.config.artifactIntegrityKey });
       this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts), manifest: job.artifactManifest });
     } catch (error) {
       this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);
