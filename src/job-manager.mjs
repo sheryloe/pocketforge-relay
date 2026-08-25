@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { collectArtifacts, publicArtifacts, writeBuildSummary } from './artifacts.mjs';
-import { JobEventStore } from './job-event-store.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, verifyArtifactManifest, writeArtifactManifest, writeBuildSummary } from './artifacts.mjs';
+import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
@@ -14,6 +14,7 @@ const NO_EVENT_STORE = Object.freeze({
   append: () => Promise.resolve(),
   flush: () => Promise.resolve(),
   read: async () => null,
+  delete: async () => false,
 });
 
 export class JobManager {
@@ -61,6 +62,7 @@ export class JobManager {
       sourceDir: null,
       logs: [],
       artifacts: [],
+      artifactManifest: null,
       eventSequence: 0,
       persistedEventSequence: 0,
       events: new EventEmitter(),
@@ -88,8 +90,28 @@ export class JobManager {
     return this.eventStore.read(String(id));
   }
 
-  getArtifact(id, artifactId) {
-    return this.jobs.get(id)?.artifacts.find(artifact => artifact.id === String(artifactId)) || null;
+  async getJobProjection(id) {
+    const events = await this.getJobHistory(id);
+    return projectJobEvents(events);
+  }
+
+  async deleteJobHistory(id) {
+    const projection = await this.getJobProjection(id);
+    if (!projection) return false;
+    if (!FINAL.has(projection.status)) throw statusError('Only terminal job history can be deleted.', 409);
+    return this.eventStore.delete(String(id));
+  }
+
+  async getArtifact(id, artifactId) {
+    const job = this.jobs.get(id);
+    const artifact = job?.artifacts.find(candidate => candidate.id === String(artifactId)) || null;
+    if (!artifact || !job.artifactManifest) return null;
+    const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', job.id);
+    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir });
+    const entry = manifest.artifacts.find(candidate => candidate.id === artifact.id);
+    const publicArtifact = publicArtifacts([artifact])[0];
+    if (!entry || JSON.stringify(entry) !== JSON.stringify(publicArtifact)) throw statusError('Artifact does not match its manifest.', 409);
+    return artifact;
   }
 
   resolveDeviceArtifact(id, artifactId) {
@@ -238,13 +260,15 @@ export class JobManager {
     job.finishedSequence = ++this.finishedSequence;
     try {
       await writeBuildSummary(job, sourceDir, finalStatus);
-      job.artifacts = await collectArtifacts({
+      const collected = await collectArtifacts({
         sourceDir,
         preset,
         maxFiles: this.config.maxArtifactFiles,
         maxBytes: this.config.maxArtifactBytes,
       });
-      this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts) });
+      job.artifacts = await snapshotArtifacts({ artifacts: collected, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), maxBytes: this.config.maxArtifactBytes });
+      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id) });
+      this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts), manifest: job.artifactManifest });
     } catch (error) {
       this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);
     }
@@ -309,6 +333,7 @@ export class JobManager {
       currentStep: job.currentStep,
       logs: [...job.logs],
       artifacts: publicArtifacts(job.artifacts),
+      artifactManifest: job.artifactManifest,
     };
   }
 }
@@ -318,7 +343,7 @@ function persistedEvent(job, event, sequence) {
   if (event.type === 'status') return { ...base, status: event.status };
   if (event.type === 'step') return { ...base, currentStep: event.currentStep };
   if (event.type === 'log') return { ...base, log: event.log };
-  if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts };
+  if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts, manifest: event.manifest };
   return { ...base, status: job.status, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
 }
 

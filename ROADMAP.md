@@ -15,16 +15,18 @@ Android-device execution remain separate `NOT RUN` integration claims.
 ## v0.2 - Durable trust foundation (next)
 
 - Versioned protocol schema and adapter contracts.
-- Append-only event persistence and restart-readable audit history; current-state
-  projection and interrupted-process recovery remain planned.
+- Append-only event persistence, restart-readable audit history, and an
+  authenticated current-state projection are implemented. Interrupted running
+  processes are not resumed after restart and remain planned.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
-- Collection-time and pre-download SHA-256 verification for local artifacts is
-  implemented; immutable snapshots, signed manifests, and provenance remain
-  planned.
+- Collection-time and pre-download SHA-256 verification plus relay-owned local
+  snapshots are implemented; signed manifests and external provenance remain planned.
 - Fixed public diagnostics for common Gradle, npm, and CMake failures are
   implemented; fixture coverage should expand with sanitized pilot evidence.
-- One reproducible pilot against a trusted external Node.js repository.
+- One reproducible, dependency-free syntax/API pilot against a commit-pinned
+  trusted external Node.js repository is recorded. Its dependency-based
+  upstream `npm test` remains `NOT RUN` because that revision has no lockfile.
 
 Exit evidence for v0.2 includes versioned compatibility fixtures, forced-restart
 recovery tests, non-root/default-deny/resource-limit container checks, and a

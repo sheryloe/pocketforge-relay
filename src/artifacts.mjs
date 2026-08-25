@@ -33,6 +33,64 @@ export async function collectArtifacts({ sourceDir, preset, maxFiles, maxBytes }
   if (preset.artifactMode === 'android') await walk(sourceDir, async file => { const rel = path.relative(sourceDir, file).split(path.sep).join('/'); const ext = path.extname(file).toLowerCase(); if ((ext === '.apk' || ext === '.aab') && rel.includes('/build/outputs/')) await add(file); }, results, maxFiles, true);
   return results;
 }
+export async function snapshotArtifacts({ artifacts, snapshotDir, maxBytes }) {
+  if (!path.isAbsolute(snapshotDir)) throw new Error('Artifact snapshot directory must be absolute.');
+  await fs.mkdir(snapshotDir, { recursive: true });
+  const root = await fs.lstat(snapshotDir);
+  if (!root.isDirectory() || root.isSymbolicLink()) throw new Error('Artifact snapshot directory is unsafe.');
+  const snapshots = [];
+  for (const artifact of artifacts) {
+    const source = await fs.open(artifact.absolutePath, 'r');
+    const destination = path.join(snapshotDir, `${artifact.id}-${artifact.sha256}`);
+    let target;
+    try {
+      const before = await source.stat();
+      if (!before.isFile() || before.size !== artifact.size || before.size > maxBytes) throw new Error('Artifact changed before snapshot.');
+      const bytes = await source.readFile();
+      const after = await source.stat();
+      const digest = crypto.createHash('sha256').update(bytes).digest('hex');
+      if (!sameFile(before, after) || digest !== artifact.sha256) throw new Error('Artifact changed before snapshot.');
+      target = await fs.open(destination, 'wx');
+      await target.writeFile(bytes);
+      await target.sync();
+      snapshots.push({ ...artifact, absolutePath: destination });
+    } finally {
+      await target?.close();
+      await source.close();
+    }
+  }
+  return snapshots;
+}
+export async function writeArtifactManifest({ job, artifacts, snapshotDir }) {
+  const manifest = {
+    schemaVersion: 1,
+    jobId: job.id,
+    repository: job.repository,
+    ref: job.ref,
+    resolvedCommit: job.resolvedCommit,
+    presetId: job.presetId,
+    artifacts: publicArtifacts(artifacts),
+  };
+  const payload = `${JSON.stringify(manifest)}\n`;
+  const sha256 = crypto.createHash('sha256').update(payload).digest('hex');
+  await fs.writeFile(path.join(snapshotDir, 'manifest.json'), payload, { encoding: 'utf8', flag: 'wx' });
+  return Object.freeze({ ...manifest, sha256 });
+}
+export async function verifyArtifactManifest({ manifest, snapshotDir }) {
+  const file = path.join(snapshotDir, 'manifest.json');
+  const handle = await fs.open(file, 'r');
+  try {
+    const before = await handle.stat();
+    if (!before.isFile() || before.isSymbolicLink()) throw new Error('Artifact manifest is unsafe.');
+    const payload = await handle.readFile('utf8');
+    const after = await handle.stat();
+    const digest = crypto.createHash('sha256').update(payload).digest('hex');
+    if (!sameFile(before, after) || digest !== manifest.sha256) throw new Error('Artifact manifest changed after creation.');
+    const parsed = JSON.parse(payload);
+    if (parsed.schemaVersion !== 1 || parsed.jobId !== manifest.jobId) throw new Error('Artifact manifest is malformed.');
+    return parsed;
+  } finally { await handle.close(); }
+}
 async function walk(root, onFile, results, maxFiles, skipLarge = false) {
   try { const s = await fs.lstat(root); if (!s.isDirectory() || s.isSymbolicLink()) return; } catch { return; }
   const stack = [root];

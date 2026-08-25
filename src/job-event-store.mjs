@@ -49,6 +49,16 @@ export class JobEventStore {
     } finally { await handle.close(); }
   }
 
+  async delete(jobId) {
+    const file = this.#file(jobId);
+    let before;
+    try { before = await fs.lstat(file); }
+    catch (error) { if (error?.code === 'ENOENT') return false; throw error; }
+    if (!before.isFile() || before.isSymbolicLink()) throw new Error('Job event log is unsafe.');
+    await fs.unlink(file);
+    return true;
+  }
+
   async #append(jobId, event) {
     const file = this.#file(jobId);
     await fs.mkdir(this.root, { recursive: true });
@@ -83,4 +93,23 @@ export class JobEventStore {
     if (!JOB_ID.test(String(jobId || ''))) throw new Error('Job id is malformed.');
     return path.join(this.root, `${jobId}.jsonl`);
   }
+}
+
+export function projectJobEvents(events) {
+  if (!Array.isArray(events) || events.length === 0) return null;
+  const projection = { jobId: events[0].jobId, status: null, currentStep: null, finishedAt: null, exitCode: null, error: null, artifacts: [], artifactManifest: null };
+  for (const event of events) {
+    if (event.type === 'status') projection.status = event.status;
+    if (event.type === 'step') projection.currentStep = event.currentStep;
+    if (event.type === 'artifacts') { projection.artifacts = event.artifacts; projection.artifactManifest = event.manifest ?? null; }
+    if (event.type === 'complete') {
+      projection.status = event.status;
+      projection.currentStep = null;
+      projection.finishedAt = event.finishedAt;
+      projection.exitCode = event.exitCode;
+      projection.error = event.error;
+    }
+  }
+
+  return Object.freeze(projection);
 }

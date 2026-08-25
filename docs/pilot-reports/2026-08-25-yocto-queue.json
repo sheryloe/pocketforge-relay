@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-08-25",
+  "repository": "https://github.com/sindresorhus/yocto-queue",
+  "resolvedCommit": "b07eac099753833b29d06c614149904445739776",
+  "cleanCheckout": true,
+  "runtime": "Node.js v24.15.0",
+  "commands": [
+    { "command": "node --check index.js", "exitCode": 0 },
+    { "command": "node --input-type=module -e <FIFO assertion>", "exitCode": 0 }
+  ],
+  "artifacts": [
+    { "path": "index.js", "sha256": "2eabf3096793c43934ef127fb50238dcba93074fb54f943fc62aeab616769dfc" }
+  ],
+  "notRun": [
+    "npm test: NOT RUN because the pinned repository has no dependency lockfile"
+  ]
+}
