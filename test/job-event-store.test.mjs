@@ -27,7 +27,7 @@ test('projects the latest durable state without claiming process recovery', () =
     { jobId, type: 'artifacts', artifacts: [{ id: '0', sha256: 'a'.repeat(64) }] },
     { jobId, type: 'complete', status: 'succeeded', finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null },
   ]);
-  assert.deepEqual(projected, { jobId, status: 'succeeded', currentStep: null, finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null, artifacts: [{ id: '0', sha256: 'a'.repeat(64) }] });
+  assert.deepEqual(projected, { jobId, status: 'succeeded', currentStep: null, finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null, artifacts: [{ id: '0', sha256: 'a'.repeat(64) }], artifactManifest: null });
   assert.equal(projectJobEvents(null), null);
 });
 
