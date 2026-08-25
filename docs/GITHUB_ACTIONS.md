@@ -27,13 +27,18 @@ Implemented core:
   download routes whose public representations omit credentials and absolute
   filesystem paths.
 
-Not integrated:
+Still not integrated:
 
 - persistence across relay restarts;
 - webhook observation;
-- a real GitHub credential, repository, workflow, runner, or artifact download.
+- live cancellation, private-repository access, or self-hosted runners.
 
-Those items are `NOT RUN` until an explicit test target is available.
+The allowlisted `pocketforge-evidence.yml` target was dispatched through the
+relay on 2026-08-25. Run
+[32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748)
+completed successfully; the relay collected the run log ZIP and required
+`relay-evidence` ZIP and the downloaded artifact matched SHA-256
+`9c0a259c9245689c1548bcd4bb2d41ff525f1dea51510db3a6abc464f6f3eb98`.
 
 ## Configuration contract
 
@@ -237,10 +242,9 @@ node --check src/github-actions-client.mjs
 node --check src/github-actions-runner.mjs
 ```
 
-Live dispatch, cancellation, private-repository access, hosted/self-hosted
-runner execution, and real log/artifact redirects remain `NOT RUN` until a
-dedicated test repository and least-privilege credential are explicitly
-configured.
+Live public-repository dispatch, hosted-runner observation, and real log/artifact
+redirects are recorded above. Cancellation, private-repository access, and
+self-hosted runners remain `NOT RUN`.
 
 ## Official references
 

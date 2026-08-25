@@ -11,8 +11,9 @@
   and explicit full deletion for one terminal job's retained data.
 - Security, protocol, architecture, and verification documentation.
 
-Contract tests cover these paths, but live external Actions dispatch and physical
-Android-device execution remain separate `NOT RUN` integration claims.
+Contract tests cover both adapter paths. One allowlisted public Actions dispatch,
+poll, log ZIP, and required artifact ZIP passed live on 2026-08-25; cancellation
+remains `NOT RUN`. Physical Android-device execution also remains `NOT RUN`.
 
 ## v0.2 - Durable trust foundation (in progress)
 

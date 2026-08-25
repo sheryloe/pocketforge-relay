@@ -19,6 +19,7 @@ Before submitting an application, attach observed and dated evidence such as rel
 | 2026-08-19 | Local artifact download verification | Syntax checks passed; 124 tests passed and 0 failed with pre-download identity, metadata, and SHA-256 checks | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-25 | Trust-foundation integration | PR #3 merged 18 focused commits after GitHub Actions passed; local regression passed 133 tests with immutable snapshots, manifests, and an observed pinned external pilot | [PR #3](https://github.com/sheryloe/pocketforge-relay/pull/3), [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-25 | v0.2 completion candidate | Syntax checks and 139 tests passed locally with forced-restart finalization, protocol-v1 envelopes, and optional dedicated-key HMAC-SHA256 manifests | [`VERIFICATION.md`](VERIFICATION.md) |
+| 2026-08-25 | Live hosted-runner integration | The relay's one-shot approval dispatched and observed a real allowlisted workflow, collected two ZIPs, and reverified the required evidence SHA-256 | [Actions run 32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748), [PR #8](https://github.com/sheryloe/pocketforge-relay/pull/8), [`VERIFICATION.md`](VERIFICATION.md) |
 
 These entries show repository maintenance and local/browser verification. They
 do not establish downloads, active installations, external contributors, or
@@ -33,8 +34,9 @@ physical-device operation.
   has no lockfile.
 - Physical Android installation, launch, logs, crash capture, and screenshots
   remain `NOT RUN`.
-- Live dispatch, cancellation, and artifact collection through the optional
-  GitHub Actions adapter remain `NOT RUN`.
+- Live GitHub Actions cancellation and private-repository access remain
+  `NOT RUN`; public-repository dispatch, polling, log ZIP, and artifact ZIP
+  collection passed once through the relay.
 
 ## Next 30-day outcomes
 
