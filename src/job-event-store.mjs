@@ -112,10 +112,12 @@ export class JobEventStore {
 
 export function projectJobEvents(events) {
   if (!Array.isArray(events) || events.length === 0) return null;
-  const projection = { jobId: events[0].jobId, status: null, currentStep: null, finishedAt: null, exitCode: null, error: null, interrupted: false, artifacts: [], artifactManifest: null };
+  const projection = { id: events[0].jobId, jobId: events[0].jobId, label: '', sourceType: null, repository: null, ref: null, resolvedCommit: null, presetId: null, presetName: null, status: null, createdAt: null, startedAt: null, currentStep: null, finishedAt: null, exitCode: null, error: null, failure: null, interrupted: false, recovered: true, logs: [], artifacts: [], artifactManifest: null };
   for (const event of events) {
+    if (event.job && typeof event.job === 'object') Object.assign(projection, event.job, { id: events[0].jobId, jobId: events[0].jobId, recovered: true, logs: projection.logs, artifacts: projection.artifacts, artifactManifest: projection.artifactManifest });
     if (event.type === 'status') projection.status = event.status;
     if (event.type === 'step') projection.currentStep = event.currentStep;
+    if (event.type === 'log' && event.log) projection.logs.push(event.log);
     if (event.type === 'artifacts') { projection.artifacts = event.artifacts; projection.artifactManifest = event.manifest ?? null; }
     if (event.type === 'complete') {
       projection.status = event.status;

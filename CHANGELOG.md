@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-25 - v0.1 lifecycle completion
+
+- Discover completed jobs after a relay restart and retain their bounded logs,
+  metadata, artifact manifests, and verified artifact downloads.
+- Add an English/Korean/Japanese mobile flow that explicitly deletes one
+  terminal job record, workspace, logs, and artifact snapshots together.
+- Verify the live mobile flow at 390 x 844 through build, restart recovery, and
+  irreversible-delete review without executing the destructive confirmation.
+
 ## 2026-08-25 - v0.2 completion candidate
 
 - Finalize valid non-terminal job histories as interrupted during startup.

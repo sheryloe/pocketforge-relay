@@ -120,6 +120,20 @@ test('HTTP API serves an authenticated restart projection', async () => {
   } finally { await closeServer(server); }
 });
 
+test('HTTP API lists authenticated durable job projections', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const manager = { listJobHistory: async () => [{ id, status: 'succeeded', recovered: true }] };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/job-history`;
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    const response = await fetch(url, { headers: { Authorization: 'Bearer test-token' } });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).jobs[0].id, id);
+  } finally { await closeServer(server); }
+});
+
 test('HTTP API requires an explicit decision before deleting terminal history', async () => {
   const id = '123e4567-e89b-42d3-a456-426614174000';
   let deleted = false;
@@ -131,6 +145,22 @@ test('HTTP API requires an explicit decision before deleting terminal history', 
     const denied = await fetch(url, { method: 'DELETE', headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' }, body: JSON.stringify({ decision: 'keep' }) });
     assert.equal(denied.status, 400); assert.equal(deleted, false);
     const accepted = await fetch(url, { method: 'DELETE', headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' }, body: JSON.stringify({ decision: 'delete' }) });
+    assert.equal(accepted.status, 200); assert.equal(deleted, true);
+  } finally { await closeServer(server); }
+});
+
+test('HTTP API requires an explicit decision before deleting all terminal job data', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  let deleted = false;
+  const manager = { deleteJobData: async () => { deleted = true; return true; } };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = `http://127.0.0.1:${server.address().port}/api/jobs/${id}`;
+  const headers = { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' };
+  try {
+    const denied = await fetch(url, { method: 'DELETE', headers, body: JSON.stringify({ decision: 'keep' }) });
+    assert.equal(denied.status, 400); assert.equal(deleted, false);
+    const accepted = await fetch(url, { method: 'DELETE', headers, body: JSON.stringify({ decision: 'delete' }) });
     assert.equal(accepted.status, 200); assert.equal(deleted, true);
   } finally { await closeServer(server); }
 });

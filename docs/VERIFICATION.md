@@ -24,7 +24,11 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 139 passed, 0 failed
+- Automated tests: 145 passed, 0 failed
+- Restart-readable mobile job discovery and recovered artifact download: PASS
+- Terminal full-data deletion contract and confirmation UI: PASS
+- Destructive deletion click during real-browser inspection: `NOT RUN`
+  (confirmation contract was exercised by automated manager/HTTP tests)
 - Forced-restart interrupted-history finalization: PASS
 - Protocol-v1 request and SSE envelope compatibility: PASS
 - Signed and unsigned artifact-manifest verification: PASS
@@ -80,6 +84,9 @@ npm test
 - Collection-time local artifact SHA-256 and download digest header: PASS
 - Changed local artifact rejection before download response headers: PASS
 - Current Android-integrated PWA at 390 x 844 in the Codex in-app browser: PASS
+- Bundled demo followed by relay restart and recovered mobile job rendering at
+  390 x 844: PASS
+- Recovered-job deletion review visible at 390 x 844: PASS
 - English/Korean/Japanese live locale switching at 390 x 844: PASS
 - English/Korean/Japanese horizontal overflow at 390 x 844: PASS (0 overflowing locales)
 - Browser console errors during connection, bundled demo, and locale switching: PASS (0 errors)

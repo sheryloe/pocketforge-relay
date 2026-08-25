@@ -96,11 +96,33 @@ export class JobManager {
     return projectJobEvents(events);
   }
 
+  async listJobHistory() {
+    const projections = [];
+    for (const id of await this.eventStore.listJobIds()) {
+      const projection = await this.getJobProjection(id);
+      if (projection) projections.push(projection);
+    }
+    return projections.sort((a, b) => String(b.finishedAt || b.createdAt || '').localeCompare(String(a.finishedAt || a.createdAt || '')));
+  }
+
   async deleteJobHistory(id) {
     const projection = await this.getJobProjection(id);
     if (!projection) return false;
     if (!FINAL.has(projection.status)) throw statusError('Only terminal job history can be deleted.', 409);
     return this.eventStore.delete(String(id));
+  }
+
+  async deleteJobData(id) {
+    await this.eventStore.flush();
+    const projection = await this.getJobProjection(id);
+    if (!projection) return false;
+    if (!FINAL.has(projection.status)) throw statusError('Only terminal job data can be deleted.', 409);
+    await removeOwnedJobDirectory(path.join(this.config.dataDir, 'jobs'), String(id));
+    await removeOwnedJobDirectory(path.join(this.config.dataDir, 'artifact-snapshots'), String(id));
+    await this.eventStore.delete(String(id));
+    const job = this.jobs.get(String(id));
+    if (job) { job.events.removeAllListeners(); this.jobs.delete(String(id)); }
+    return true;
   }
 
   async recoverInterruptedJobs() {
@@ -121,14 +143,16 @@ export class JobManager {
 
   async getArtifact(id, artifactId) {
     const job = this.jobs.get(id);
-    const artifact = job?.artifacts.find(candidate => candidate.id === String(artifactId)) || null;
-    if (!artifact || !job.artifactManifest) return null;
-    const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', job.id);
-    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir, integrityKey: this.config.artifactIntegrityKey });
+    const projection = job ? null : await this.getJobProjection(id);
+    const artifact = (job?.artifacts || projection?.artifacts || []).find(candidate => candidate.id === String(artifactId)) || null;
+    const artifactManifest = job?.artifactManifest || projection?.artifactManifest;
+    if (!artifact || !artifactManifest) return null;
+    const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', String(id));
+    const manifest = await verifyArtifactManifest({ manifest: artifactManifest, snapshotDir, integrityKey: this.config.artifactIntegrityKey });
     const entry = manifest.artifacts.find(candidate => candidate.id === artifact.id);
     const publicArtifact = publicArtifacts([artifact])[0];
     if (!entry || JSON.stringify(entry) !== JSON.stringify(publicArtifact)) throw statusError('Artifact does not match its manifest.', 409);
-    return artifact;
+    return { ...artifact, absolutePath: path.join(snapshotDir, `${artifact.id}-${artifact.sha256}`) };
   }
 
   resolveDeviceArtifact(id, artifactId) {
@@ -357,11 +381,39 @@ export class JobManager {
 
 function persistedEvent(job, event, sequence) {
   const base = { sequence, timestamp: new Date().toISOString(), type: event.type };
-  if (event.type === 'status') return { ...base, status: event.status };
+  if (event.type === 'status') return { ...base, status: event.status, job: durableJob(job) };
   if (event.type === 'step') return { ...base, currentStep: event.currentStep };
   if (event.type === 'log') return { ...base, log: event.log };
   if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts, manifest: event.manifest };
   return { ...base, status: job.status, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
+}
+
+function durableJob(job) {
+  if (!job || typeof job.id !== 'string') return {};
+  return {
+    id: job.id, label: job.label, sourceType: job.sourceType, repository: job.repository,
+    ref: job.ref, resolvedCommit: job.resolvedCommit, presetId: job.presetId,
+    presetName: job.presetName, status: job.status, createdAt: job.createdAt,
+    startedAt: job.startedAt, finishedAt: job.finishedAt, exitCode: job.exitCode,
+    error: job.error, failure: job.failure, currentStep: job.currentStep,
+  };
+}
+
+async function removeOwnedJobDirectory(root, id) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new Error('Job id is malformed.');
+  const target = path.join(root, id);
+  let targetStat;
+  try { targetStat = await fs.lstat(target); } catch (error) { if (error?.code === 'ENOENT') return false; throw error; }
+  if (!targetStat.isDirectory() || targetStat.isSymbolicLink()) throw new Error('Job data directory is unsafe.');
+  await fs.mkdir(root, { recursive: true });
+  const quarantine = path.join(root, `.${id}.delete-${crypto.randomUUID()}`);
+  await fs.rename(target, quarantine);
+  const stat = await fs.lstat(quarantine);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Job data directory is unsafe.');
+  const realRoot = await fs.realpath(root); const realTarget = await fs.realpath(quarantine);
+  if (!realTarget.startsWith(`${realRoot}${path.sep}`)) throw new Error('Job data directory escapes its relay root.');
+  await fs.rm(quarantine, { recursive: true });
+  return true;
 }
 
 export async function resolveGitCommit({ sourceDir, timeoutMs, signal, onLog, runStep = runProcessStep }) {

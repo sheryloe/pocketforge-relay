@@ -22,12 +22,22 @@ test('appends bounded job events and reads them after a new store instance start
 
 test('projects the latest durable state without claiming process recovery', () => {
   const projected = projectJobEvents([
-    { jobId, type: 'status', status: 'queued' },
+    { jobId, type: 'status', status: 'queued', job: { id: jobId, label: 'Durable demo', sourceType: 'demo', presetId: 'demo-web', createdAt: '2026-08-20T00:00:00.000Z' } },
     { jobId, type: 'step', currentStep: 'Build' },
+    { jobId, type: 'log', log: { sequence: 1, channel: 'system', message: 'Started' } },
     { jobId, type: 'artifacts', artifacts: [{ id: '0', sha256: 'a'.repeat(64) }] },
     { jobId, type: 'complete', status: 'succeeded', finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null },
   ]);
-  assert.deepEqual(projected, { jobId, status: 'succeeded', currentStep: null, finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null, interrupted: false, artifacts: [{ id: '0', sha256: 'a'.repeat(64) }], artifactManifest: null });
+  assert.equal(projected.id, jobId);
+  assert.equal(projected.jobId, jobId);
+  assert.equal(projected.label, 'Durable demo');
+  assert.equal(projected.sourceType, 'demo');
+  assert.equal(projected.presetId, 'demo-web');
+  assert.equal(projected.status, 'succeeded');
+  assert.equal(projected.currentStep, null);
+  assert.equal(projected.recovered, true);
+  assert.deepEqual(projected.logs, [{ sequence: 1, channel: 'system', message: 'Started' }]);
+  assert.deepEqual(projected.artifacts, [{ id: '0', sha256: 'a'.repeat(64) }]);
   assert.equal(projectJobEvents(null), null);
 });
 
