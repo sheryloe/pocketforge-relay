@@ -350,13 +350,19 @@ export class GitHubActionsRunnerAdapter {
       });
       remainingBytes -= logDownload.size;
       artifacts.push(remoteArtifact(artifacts.length, logName, logDownload, null, 'github-actions-logs'));
-      const listed = await this.#client.listRunArtifacts({
-        owner: target.owner,
-        repo: target.repo,
-        runId: run.id,
-        maxArtifacts: 100,
-        signal,
-      });
+      let listed = [];
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        listed = await this.#client.listRunArtifacts({
+          owner: target.owner,
+          repo: target.repo,
+          runId: run.id,
+          maxArtifacts: 100,
+          signal,
+        });
+        const complete = target.artifactNames.every(requiredName => listed.filter(item => item.name === requiredName && !item.expired).length === 1);
+        if (complete || attempt === 2) break;
+        await this.#sleep(this.#pollIntervalMs, signal);
+      }
       const selected = [];
       for (const requiredName of target.artifactNames) {
         const matches = listed.filter(item => item.name === requiredName && !item.expired);
