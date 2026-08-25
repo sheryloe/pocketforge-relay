@@ -24,7 +24,9 @@ Android-device execution remain separate `NOT RUN` integration claims.
   snapshots are implemented; signed manifests and external provenance remain planned.
 - Fixed public diagnostics for common Gradle, npm, and CMake failures are
   implemented; fixture coverage should expand with sanitized pilot evidence.
-- One reproducible pilot against a trusted external Node.js repository.
+- One reproducible, dependency-free syntax/API pilot against a commit-pinned
+  trusted external Node.js repository is recorded. Its dependency-based
+  upstream `npm test` remains `NOT RUN` because that revision has no lockfile.
 
 Exit evidence for v0.2 includes versioned compatibility fixtures, forced-restart
 recovery tests, non-root/default-deny/resource-limit container checks, and a

@@ -26,6 +26,13 @@
 - Local artifact downloads now re-read and hash the stable manifest before
   matching the requested artifact metadata and verifying its bytes.
 
+## 2026-08-25
+
+- Added a strict external Node pilot-report contract and verifier.
+- Recorded a clean, commit-pinned `yocto-queue` syntax/FIFO pilot with an
+  `index.js` SHA-256. Upstream `npm test` remains explicitly `NOT RUN` because
+  the pinned repository has no dependency lockfile.
+
 All notable changes to PocketForge Relay will be recorded in this file.
 The project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and intends to use [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
