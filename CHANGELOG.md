@@ -9,6 +9,9 @@
 - Persist bounded public Actions state in the existing append-only event store,
   restore completed runs and artifact downloads after restart, and finalize
   interrupted observations as `needs_attention` without redispatch.
+- Add a provider-neutral proposal-only agent core with server-owned evidence
+  previews, expiring one-shot consent, bounded concurrency/timeouts, and a
+  fail-closed non-executable output schema.
 
 ## 2026-08-25 - v0.5 contributor ecosystem foundation
 

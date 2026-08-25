@@ -68,7 +68,9 @@ and every result must distinguish `PASS`, `FAIL`, and `NOT RUN` honestly.
 AI proposals will be treated as untrusted input and must pass the same
 allowlists and review gates. Sending source, logs, screenshots, or evidence to
 an external AI provider will require explicit operator opt-in; the relay will
-not transmit them by default.
+not transmit them by default. The implemented proposal-only core and its current
+`NOT RUN` provider boundary are documented in
+[`docs/AGENT_PROPOSALS.md`](docs/AGENT_PROPOSALS.md).
 
 ## Open-source plan
 
