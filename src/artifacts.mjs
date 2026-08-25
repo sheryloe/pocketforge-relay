@@ -89,7 +89,7 @@ export async function verifyArtifactManifest({ manifest, snapshotDir, integrityK
     const payload = await handle.readFile('utf8');
     const after = await handle.stat();
     const parsed = JSON.parse(payload);
-    if (!sameFile(before, after) || JSON.stringify(parsed) !== JSON.stringify(manifest)) throw new Error('Artifact manifest changed after creation.');
+    if (!sameFile(before, after) || payload !== `${JSON.stringify(parsed)}\n` || JSON.stringify(parsed) !== JSON.stringify(manifest)) throw new Error('Artifact manifest changed after creation.');
     const { integrity, ...unsigned } = parsed;
     const unsignedPayload = `${JSON.stringify(unsigned)}\n`;
     const digest = crypto.createHash('sha256').update(unsignedPayload).digest('hex');
