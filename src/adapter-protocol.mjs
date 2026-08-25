@@ -4,6 +4,22 @@ const IDENTIFIER = /^[a-z][a-z0-9-]{0,63}$/;
 export const RELAY_PROTOCOL_VERSION = 1;
 export const ADAPTER_CONTRACT_VERSION = 1;
 
+export function unwrapProtocolRequest(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Protocol request must be a JSON object.');
+  if (!Object.hasOwn(body, 'schemaVersion')) return body;
+  if (body.schemaVersion !== RELAY_PROTOCOL_VERSION) throw new Error('Protocol request version is unsupported.');
+  if (Object.keys(body).some(key => key !== 'schemaVersion' && key !== 'payload')
+    || !body.payload || typeof body.payload !== 'object' || Array.isArray(body.payload)) {
+    throw new Error('Protocol request envelope is malformed.');
+  }
+  return body.payload;
+}
+
+export function protocolEvent(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Protocol event payload is malformed.');
+  return { schemaVersion: RELAY_PROTOCOL_VERSION, ...payload };
+}
+
 export function adapterDescriptor({ id, kind, enabled, capabilities = [] }) {
   if (typeof id !== 'string' || !IDENTIFIER.test(id)) throw new Error('Adapter id is malformed.');
   if (!KINDS.has(kind)) throw new Error('Adapter kind is unsupported.');
