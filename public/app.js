@@ -93,6 +93,10 @@ const E = {
   console: $('#logConsole'),
   count: $('#artifactCount'),
   artifacts: $('#artifactsList'),
+  jobDelete: $('#jobDeleteButton'),
+  jobDeleteConfirm: $('#jobDeleteConfirm'),
+  jobDeleteConfirmButton: $('#jobDeleteConfirmButton'),
+  jobDeleteCancel: $('#jobDeleteCancelButton'),
   deviceState: $('#deviceState'),
   deviceForm: $('#deviceForm'),
   deviceJob: $('#deviceJobSelect'),
@@ -197,6 +201,12 @@ function bind() {
   E.form.onsubmit = launch;
   E.refresh.onclick = refresh;
   E.cancel.onclick = cancel;
+  E.jobDelete.onclick = () => {
+    E.jobDeleteConfirm.hidden = false;
+    E.jobDeleteConfirmButton.focus({ preventScroll: true });
+  };
+  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; };
+  E.jobDeleteConfirmButton.onclick = deleteJob;
 
   E.deviceJob.onchange = () => {
     discardDeviceApproval();
@@ -238,10 +248,10 @@ async function connect() {
   E.connect.disabled = true;
 
   try {
-    const [presetPayload, jobsPayload] = await Promise.all([api('/api/presets'), api('/api/jobs')]);
+    const [presetPayload, jobsPayload, historyPayload] = await Promise.all([api('/api/presets'), api('/api/jobs'), api('/api/job-history')]);
     sessionStorage.setItem('pocketforge.token', token);
     state.presets = presetPayload.presets;
-    state.jobs = jobsPayload.jobs;
+    state.jobs = mergeJobs(jobsPayload.jobs, historyPayload.jobs);
     E.launch.disabled = false;
     options();
     renderJobs();
@@ -303,9 +313,16 @@ async function launch(event) {
 
 async function refresh() {
   if (!state.token) return;
-  state.jobs = (await api('/api/jobs')).jobs;
+  const [live, history] = await Promise.all([api('/api/jobs'), api('/api/job-history')]);
+  state.jobs = mergeJobs(live.jobs, history.jobs);
   renderJobs();
   populateDeviceJobs();
+}
+
+function mergeJobs(liveJobs = [], durableJobs = []) {
+  const byId = new Map(durableJobs.map(job => [job.id, job]));
+  liveJobs.forEach(job => byId.set(job.id, job));
+  return [...byId.values()].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 }
 
 function renderJobs() {
@@ -338,10 +355,12 @@ function renderJobs() {
 }
 
 async function select(id) {
-  state.active = (await api(`/api/jobs/${encodeURIComponent(id)}`)).job;
+  const listed = state.jobs.find(job => job.id === id);
+  const endpoint = listed?.recovered ? 'projection' : '';
+  state.active = (await api(`/api/jobs/${encodeURIComponent(id)}${endpoint ? `/${endpoint}` : ''}`)).job;
   render();
   renderJobs();
-  stream(id);
+  if (!state.active.recovered && !LOCAL_TERMINAL.has(state.active.status)) stream(id);
 }
 
 function render() {
@@ -351,6 +370,8 @@ function render() {
   E.title.textContent = job.label || `${presetText({ id: job.presetId, name: job.presetName }, 'name')} · ${short(job.id)}`;
   setBadge(E.status, job.status);
   E.cancel.hidden = LOCAL_TERMINAL.has(job.status);
+  E.jobDelete.hidden = !LOCAL_TERMINAL.has(job.status);
+  E.jobDeleteConfirm.hidden = true;
   renderMeta(E.meta, [
     `job=${short(job.id)}`,
     `source=${job.sourceType}`,
@@ -436,6 +457,38 @@ async function cancel() {
   } finally {
     E.cancel.disabled = false;
   }
+}
+
+async function deleteJob() {
+  const job = state.active;
+  if (!job || !LOCAL_TERMINAL.has(job.status)) return;
+  E.jobDeleteConfirmButton.disabled = true;
+  try {
+    await api(`/api/jobs/${encodeURIComponent(job.id)}`, { method: 'DELETE', body: JSON.stringify({ decision: 'delete' }) });
+    state.controller?.abort();
+    state.active = null;
+    state.jobs = state.jobs.filter(candidate => candidate.id !== job.id);
+    clearSelectedJob();
+    renderJobs();
+    populateDeviceJobs();
+    msgKey(E.launchMessage, 'message.jobDeleted', 'success');
+  } catch (error) {
+    msgRaw(E.launchMessage, error.message, 'error');
+  } finally {
+    E.jobDeleteConfirmButton.disabled = false;
+  }
+}
+
+function clearSelectedJob() {
+  E.title.dataset.i18n = 'local.select';
+  E.title.textContent = t('local.select');
+  setBadge(E.status, 'idle');
+  E.cancel.hidden = true;
+  E.jobDelete.hidden = true;
+  E.jobDeleteConfirm.hidden = true;
+  E.meta.replaceChildren();
+  renderLogs(E.console, [], t('local.consoleEmpty'));
+  renderArtifacts(E.artifacts, E.count, [], () => {}, 'message.artifactsAfterRun');
 }
 
 async function stream(id) {

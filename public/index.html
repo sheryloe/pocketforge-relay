@@ -61,6 +61,15 @@
       <div id="logConsole" class="console"><p data-i18n="local.consoleEmpty">Build output will stream here. No desktop-shaped theater, just the useful signals.</p></div>
       <div class="heading artifacts-title"><div><small data-i18n="local.retrieve">04 · RETRIEVE</small><h3 data-i18n="local.artifacts">Artifacts</h3></div><em id="artifactCount" data-i18n="files.zero">0 files</em></div>
       <div id="artifactsList" class="artifacts"><p data-i18n="local.artifactsEmpty">Artifacts appear after a job completes.</p></div>
+      <button id="jobDeleteButton" type="button" class="danger device-delete" data-i18n="local.delete" hidden>Delete retained job data</button>
+      <section id="jobDeleteConfirm" class="delete-confirm" aria-labelledby="jobDeleteHeading" hidden>
+        <strong id="jobDeleteHeading" data-i18n="local.deleteTitle">Permanently delete this job and its retained data?</strong>
+        <p data-i18n="local.deleteBody">This removes the job record, workspace, logs, and artifact snapshots from this relay. It cannot be undone.</p>
+        <div class="approval-actions">
+          <button id="jobDeleteConfirmButton" type="button" class="danger" data-i18n="local.deleteConfirm">Confirm job deletion</button>
+          <button id="jobDeleteCancelButton" type="button" class="secondary" data-i18n="common.cancel">Cancel</button>
+        </div>
+      </section>
     </article>
   </section>
 
