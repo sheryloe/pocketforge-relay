@@ -20,6 +20,7 @@ Before submitting an application, attach observed and dated evidence such as rel
 | 2026-08-25 | Trust-foundation integration | PR #3 merged 18 focused commits after GitHub Actions passed; local regression passed 133 tests with immutable snapshots, manifests, and an observed pinned external pilot | [PR #3](https://github.com/sheryloe/pocketforge-relay/pull/3), [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-25 | v0.2 completion candidate | Syntax checks and 139 tests passed locally with forced-restart finalization, protocol-v1 envelopes, and optional dedicated-key HMAC-SHA256 manifests | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-25 | Live hosted-runner integration | The relay's one-shot approval dispatched and observed a real allowlisted workflow, collected two ZIPs, and reverified the required evidence SHA-256 | [Actions run 32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748), [PR #8](https://github.com/sheryloe/pocketforge-relay/pull/8), [`VERIFICATION.md`](VERIFICATION.md) |
+| 2026-08-25 | Contributor entry paths | Five bounded starter issues were published with executable acceptance criteria; adapter and first-issue forms require reuse, scope, trust, and verification evidence | [Issues #10-#14](GOOD_FIRST_ISSUES.md), [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
 
 These entries show repository maintenance and local/browser verification. They
 do not establish downloads, active installations, external contributors, or

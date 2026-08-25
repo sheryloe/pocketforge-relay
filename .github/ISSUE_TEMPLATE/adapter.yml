@@ -22,3 +22,35 @@ body:
       label: Trust and security impact
     validations:
       required: true
+  - type: textarea
+    id: existing-tools
+    attributes:
+      label: Existing tools and code checked
+      description: Name the standard, platform API, existing adapter, library, or repository module that can be reused.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Smallest adapter contract
+      description: List fixed inputs, public outputs, limits, approval points, and what remains out of scope.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Conformance and real-integration evidence
+      description: Separate deterministic fixture checks from credentials, hardware, or external runs. Mark unexecuted checks NOT RUN.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Boundary confirmation
+      options:
+        - label: User text will not become an arbitrary shell command.
+          required: true
+        - label: External side effects will require an explicit human approval boundary.
+          required: true
+        - label: Model output, remote responses, logs, artifacts, and device data remain untrusted until validated.
+          required: true

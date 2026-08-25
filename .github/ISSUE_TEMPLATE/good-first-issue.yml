@@ -1,7 +1,7 @@
 name: Good first issue proposal
 description: Propose a small, bounded contribution with clear acceptance evidence.
 title: "good first issue: "
-labels: []
+labels: [good first issue, help wanted]
 assignees: []
 body:
   - type: markdown

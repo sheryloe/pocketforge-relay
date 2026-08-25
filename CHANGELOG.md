@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-25 - v0.5 contributor ecosystem foundation
+
+- Publish five bounded starter issues with executable acceptance criteria.
+- Strengthen adapter proposals around reuse, fixed contracts, approval points,
+  conformance fixtures, and separate live evidence.
+- Route suspected vulnerabilities to the private security policy and disable
+  unstructured blank issues.
+- Link the maintained starter backlog from CONTRIBUTING and every README locale
+  without claiming external contributors or adoption.
+
 ## 2026-08-25 - v0.3 live hosted evidence
 
 - Add a commit-pinned hosted evidence workflow and exact public-repository

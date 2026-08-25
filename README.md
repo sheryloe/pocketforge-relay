@@ -215,6 +215,8 @@ the [`SECURITY.md`](SECURITY.md) reporting policy before contributing. See
 Good first contributions include adapter conformance fixtures, failure-parser
 tests, accessibility and localization fixes, and sanitized reproducible pilot
 reports. The maintainer confirms scope before implementation is promised.
+Five maintained starter tasks are listed in
+[`docs/GOOD_FIRST_ISSUES.md`](docs/GOOD_FIRST_ISSUES.md).
 
 [Propose a bounded first issue](https://github.com/sheryloe/pocketforge-relay/issues/new?template=good-first-issue.yml)
 or submit executed evidence through the
