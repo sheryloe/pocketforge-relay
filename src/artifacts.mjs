@@ -76,6 +76,21 @@ export async function writeArtifactManifest({ job, artifacts, snapshotDir }) {
   await fs.writeFile(path.join(snapshotDir, 'manifest.json'), payload, { encoding: 'utf8', flag: 'wx' });
   return Object.freeze({ ...manifest, sha256 });
 }
+export async function verifyArtifactManifest({ manifest, snapshotDir }) {
+  const file = path.join(snapshotDir, 'manifest.json');
+  const handle = await fs.open(file, 'r');
+  try {
+    const before = await handle.stat();
+    if (!before.isFile() || before.isSymbolicLink()) throw new Error('Artifact manifest is unsafe.');
+    const payload = await handle.readFile('utf8');
+    const after = await handle.stat();
+    const digest = crypto.createHash('sha256').update(payload).digest('hex');
+    if (!sameFile(before, after) || digest !== manifest.sha256) throw new Error('Artifact manifest changed after creation.');
+    const parsed = JSON.parse(payload);
+    if (parsed.schemaVersion !== 1 || parsed.jobId !== manifest.jobId) throw new Error('Artifact manifest is malformed.');
+    return parsed;
+  } finally { await handle.close(); }
+}
 async function walk(root, onFile, results, maxFiles, skipLarge = false) {
   try { const s = await fs.lstat(root); if (!s.isDirectory() || s.isSymbolicLink()) return; } catch { return; }
   const stack = [root];

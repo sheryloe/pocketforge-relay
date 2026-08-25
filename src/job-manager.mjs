@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeArtifactManifest, writeBuildSummary } from './artifacts.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, verifyArtifactManifest, writeArtifactManifest, writeBuildSummary } from './artifacts.mjs';
 import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
@@ -102,8 +102,16 @@ export class JobManager {
     return this.eventStore.delete(String(id));
   }
 
-  getArtifact(id, artifactId) {
-    return this.jobs.get(id)?.artifacts.find(artifact => artifact.id === String(artifactId)) || null;
+  async getArtifact(id, artifactId) {
+    const job = this.jobs.get(id);
+    const artifact = job?.artifacts.find(candidate => candidate.id === String(artifactId)) || null;
+    if (!artifact || !job.artifactManifest) return null;
+    const snapshotDir = path.join(this.config.dataDir, 'artifact-snapshots', job.id);
+    const manifest = await verifyArtifactManifest({ manifest: job.artifactManifest, snapshotDir });
+    const entry = manifest.artifacts.find(candidate => candidate.id === artifact.id);
+    const publicArtifact = publicArtifacts([artifact])[0];
+    if (!entry || JSON.stringify(entry) !== JSON.stringify(publicArtifact)) throw statusError('Artifact does not match its manifest.', 409);
+    return artifact;
   }
 
   resolveDeviceArtifact(id, artifactId) {
