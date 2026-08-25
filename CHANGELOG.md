@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-26 - Actions evidence finalization
+
+- Keep completed remote runs in `collecting_evidence` until required logs and
+  artifacts finish collecting, then publish the true terminal state.
+- Publish each retained Actions artifact SHA-256 and re-verify the file before
+  download headers, rejecting post-collection changes with HTTP 409.
+
 ## 2026-08-25 - v0.5 contributor ecosystem foundation
 
 - Publish five bounded starter issues with executable acceptance criteria.

@@ -20,6 +20,10 @@ Implemented core:
 - download byte and file limits, SHA-256 calculation, partial-file cleanup, and
   ZIP preservation without extraction; pre-existing destination files are
   never replaced or deleted;
+- a non-terminal `collecting_evidence` state after GitHub reports completion,
+  so success is published only after required evidence has finalized;
+- pre-download SHA-256 re-verification and an `X-Artifact-SHA256` response
+  header for every retained Actions artifact;
 - token removal before following temporary download redirects;
 - disabled-by-default environment configuration, server-owned run workspaces,
   bounded concurrent in-memory run state, and graceful observation shutdown;
