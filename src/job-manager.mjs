@@ -8,6 +8,7 @@ import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
 import { assertPresetSupportsSource, getPreset, resolvePresetSteps } from './presets.mjs';
 import { createLogRedactor, normalizeGitHubRepository, validateGitRef, validateLabel } from './security.mjs';
+import { containerizeStep } from './container-runner.mjs';
 
 const FINAL = new Set(['succeeded', 'failed', 'cancelled']);
 const NO_EVENT_STORE = Object.freeze({
@@ -272,9 +273,11 @@ export class JobManager {
         job.currentStep = step.name;
         this.emit(job, { type: 'step', currentStep: step.name });
         this.addLog(job, 'system', `Starting: ${step.name}`);
+        const execution = this.config.container?.enabled
+          ? containerizeStep({ runtimePath: this.config.container.runtimePath, image: this.config.container.image, sourceDir, step })
+          : { step, cwd: sourceDir };
         await runProcessStep({
-          step,
-          cwd: sourceDir,
+          ...execution,
           timeoutMs: this.config.stepTimeoutMs,
           signal: job.controller.signal,
           onLog: (channel, message) => this.addLog(job, channel, message),

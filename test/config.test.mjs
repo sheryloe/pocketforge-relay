@@ -16,7 +16,20 @@ test('uses bounded defaults when optional settings are absent', () => {
   assert.equal(config.token.length, 32);
   assert.deepEqual(config.actions, { enabled: false, githubToken: null, targetsFile: null });
   assert.equal(config.deviceActions.enabled, false);
+  assert.deepEqual(config.container, { enabled: false, runtimePath: null, image: null });
   assert.equal(config.artifactIntegrityKey, null);
+});
+
+test('enables container execution only with an absolute runtime and digest-pinned image', () => {
+  const runtimePath = path.resolve('tools/docker.exe');
+  const image = `ghcr.io/example/toolchain@sha256:${'a'.repeat(64)}`;
+  assert.deepEqual(loadConfig({ POCKETFORGE_CONTAINER_RUNTIME: runtimePath, POCKETFORGE_CONTAINER_IMAGE: image }).container, {
+    enabled: true, runtimePath, image,
+  });
+  assert.throws(() => loadConfig({ POCKETFORGE_CONTAINER_RUNTIME: runtimePath }), /configured together/);
+  assert.throws(() => loadConfig({ POCKETFORGE_CONTAINER_IMAGE: image }), /configured together/);
+  assert.throws(() => loadConfig({ POCKETFORGE_CONTAINER_RUNTIME: 'docker', POCKETFORGE_CONTAINER_IMAGE: image }), /absolute trimmed path/);
+  assert.throws(() => loadConfig({ POCKETFORGE_CONTAINER_RUNTIME: runtimePath, POCKETFORGE_CONTAINER_IMAGE: 'node:22' }), /canonical sha256 digest/);
 });
 
 test('accepts only a canonical 32-byte artifact integrity key', () => {
