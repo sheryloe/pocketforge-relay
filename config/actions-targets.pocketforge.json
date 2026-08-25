@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    {
+      "id": "pocketforge-evidence",
+      "name": "PocketForge hosted evidence",
+      "repository": "https://github.com/sheryloe/pocketforge-relay",
+      "workflow": "pocketforge-evidence.yml",
+      "refs": ["main"],
+      "inputs": {},
+      "artifactNames": ["relay-evidence"]
+    }
+  ]
+}
