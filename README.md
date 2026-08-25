@@ -103,6 +103,8 @@ The current Node.js MVP includes:
   record, workspace, logs, and artifact snapshots;
 - authenticated artifact downloads and a zero-dependency bundled demo;
 - relay-owned artifact snapshots and optional dedicated-key HMAC-SHA256 manifests;
+- an opt-in digest-pinned, non-root, no-network container boundary for fixed
+  preset steps (contract-tested; real daemon execution remains `NOT RUN` here);
 - Node.js, Android Gradle, and CMake presets;
 - a child-process environment allowlist, defensive secret redaction, and
   asynchronous shutdown that waits for process and artifact finalization;

@@ -24,7 +24,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 145 passed, 0 failed
+- Automated tests: 148 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -33,6 +33,11 @@ npm test
 - Protocol-v1 request and SSE envelope compatibility: PASS
 - Signed and unsigned artifact-manifest verification: PASS
 - Docker daemon integration: `NOT RUN` (CLI installed; daemon unavailable)
+- Digest-pinned container configuration and fixed-argument boundary tests: PASS
+- Non-root, no-network, read-only-rootfs, dropped-capability, no-new-privileges,
+  CPU, memory, PID, and tmpfs argument contract: PASS
+- Clean remote clone at `f19848e4f9153fc2bc681a6e0c497898b5ddf237`,
+  `npm ci --ignore-scripts`, and 145-test upstream self-pilot: PASS
 - Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
 - Focused hardening regression suite: 20 of 20 repeated runs passed
 - Bundled demo process execution: PASS
