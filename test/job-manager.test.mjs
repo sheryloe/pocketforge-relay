@@ -98,7 +98,7 @@ test('completed job history remains readable after the manager restarts', async 
   const first = new JobManager(makeConfig({ dataDir }));
   let id;
   try {
-    id = first.createJob({ sourceType: 'demo', presetId: 'demo-web' }).id;
+    id = first.createJob({ sourceType: 'demo', presetId: 'demo-web', label: 'Restarted demo' }).id;
     await waitForFinal(first, id);
     await first.shutdown();
     const second = new JobManager(makeConfig({ dataDir }));
@@ -108,11 +108,50 @@ test('completed job history remains readable after the manager restarts', async 
       assert.equal(history[0].status, 'queued');
       assert.equal(history.at(-1).type, 'complete');
       assert.equal(history.at(-1).status, 'succeeded');
+      const jobs = await second.listJobHistory();
+      assert.equal(jobs.length, 1);
+      assert.equal(jobs[0].id, id);
+      assert.equal(jobs[0].label, 'Restarted demo');
+      assert.equal(jobs[0].recovered, true);
+      assert.equal(jobs[0].status, 'succeeded');
+      assert.ok(jobs[0].logs.some(entry => entry.message.includes('Created dist/index.html')));
+      const htmlArtifact = jobs[0].artifacts.find(candidate => candidate.relativePath === 'dist/index.html');
+      const artifact = await second.getArtifact(id, htmlArtifact.id);
+      assert.equal((await fs.readFile(artifact.absolutePath, 'utf8')).includes('<!doctype html>'), true);
     } finally { await second.shutdown(); }
   } finally {
     await first.shutdown();
     await fs.rm(dataDir, { recursive: true, force: true });
   }
+});
+
+test('deletes one terminal job workspace, snapshots, and durable history together', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-delete-job-'));
+  const manager = new JobManager(makeConfig({ dataDir }));
+  try {
+    const id = manager.createJob({ sourceType: 'demo', presetId: 'demo-web', label: 'Delete me' }).id;
+    await waitForFinal(manager, id);
+    await fs.access(path.join(dataDir, 'jobs', id));
+    await fs.access(path.join(dataDir, 'artifact-snapshots', id));
+    assert.equal(await manager.deleteJobData(id), true);
+    assert.equal(manager.getJob(id), null);
+    assert.equal(await manager.getJobHistory(id), null);
+    await assert.rejects(fs.access(path.join(dataDir, 'jobs', id)), error => error.code === 'ENOENT');
+    await assert.rejects(fs.access(path.join(dataDir, 'artifact-snapshots', id)), error => error.code === 'ENOENT');
+    assert.equal(await manager.deleteJobData(id), false);
+  } finally { await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
+});
+
+test('refuses full deletion for a non-terminal durable job', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-delete-active-'));
+  const manager = new JobManager(makeConfig({ dataDir }));
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  try {
+    await manager.eventStore.append(id, { sequence: 1, timestamp: '2026-08-25T00:00:00.000Z', type: 'status', status: 'running' });
+    await manager.eventStore.flush();
+    await assert.rejects(manager.deleteJobData(id), error => error.statusCode === 409 && /terminal/.test(error.message));
+    assert.equal((await manager.getJobProjection(id)).status, 'running');
+  } finally { await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
 });
 
 test('startup finalizes a durable non-terminal history as interrupted', async () => {
