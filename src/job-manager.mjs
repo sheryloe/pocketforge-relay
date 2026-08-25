@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeBuildSummary } from './artifacts.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeArtifactManifest, writeBuildSummary } from './artifacts.mjs';
 import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
 import { classifyBuildFailure } from './failure-parsers.mjs';
 import { runProcessStep } from './process-runner.mjs';
@@ -62,6 +62,7 @@ export class JobManager {
       sourceDir: null,
       logs: [],
       artifacts: [],
+      artifactManifest: null,
       eventSequence: 0,
       persistedEventSequence: 0,
       events: new EventEmitter(),
@@ -258,7 +259,8 @@ export class JobManager {
         maxBytes: this.config.maxArtifactBytes,
       });
       job.artifacts = await snapshotArtifacts({ artifacts: collected, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id), maxBytes: this.config.maxArtifactBytes });
-      this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts) });
+      job.artifactManifest = await writeArtifactManifest({ job, artifacts: job.artifacts, snapshotDir: path.join(this.config.dataDir, 'artifact-snapshots', job.id) });
+      this.emit(job, { type: 'artifacts', artifacts: publicArtifacts(job.artifacts), manifest: job.artifactManifest });
     } catch (error) {
       this.addLog(job, 'stderr', `Artifact collection failed: ${safeJobError(error)}`);
     }
@@ -323,6 +325,7 @@ export class JobManager {
       currentStep: job.currentStep,
       logs: [...job.logs],
       artifacts: publicArtifacts(job.artifacts),
+      artifactManifest: job.artifactManifest,
     };
   }
 }
@@ -332,7 +335,7 @@ function persistedEvent(job, event, sequence) {
   if (event.type === 'status') return { ...base, status: event.status };
   if (event.type === 'step') return { ...base, currentStep: event.currentStep };
   if (event.type === 'log') return { ...base, log: event.log };
-  if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts };
+  if (event.type === 'artifacts') return { ...base, artifacts: event.artifacts, manifest: event.manifest };
   return { ...base, status: job.status, finishedAt: job.finishedAt, exitCode: job.exitCode, error: job.error };
 }
 

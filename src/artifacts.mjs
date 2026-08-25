@@ -61,6 +61,21 @@ export async function snapshotArtifacts({ artifacts, snapshotDir, maxBytes }) {
   }
   return snapshots;
 }
+export async function writeArtifactManifest({ job, artifacts, snapshotDir }) {
+  const manifest = {
+    schemaVersion: 1,
+    jobId: job.id,
+    repository: job.repository,
+    ref: job.ref,
+    resolvedCommit: job.resolvedCommit,
+    presetId: job.presetId,
+    artifacts: publicArtifacts(artifacts),
+  };
+  const payload = `${JSON.stringify(manifest)}\n`;
+  const sha256 = crypto.createHash('sha256').update(payload).digest('hex');
+  await fs.writeFile(path.join(snapshotDir, 'manifest.json'), payload, { encoding: 'utf8', flag: 'wx' });
+  return Object.freeze({ ...manifest, sha256 });
+}
 async function walk(root, onFile, results, maxFiles, skipLarge = false) {
   try { const s = await fs.lstat(root); if (!s.isDirectory() || s.isSymbolicLink()) return; } catch { return; }
   const stack = [root];
