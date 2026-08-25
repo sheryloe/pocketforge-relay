@@ -1,12 +1,12 @@
 # MVP Verification Record
 
-Artifact manifests are deterministic JSON evidence with their own SHA-256.
-They provide integrity binding, not signer identity; signature verification is
-`NOT RUN` and must not be inferred from the manifest digest.
+Artifact manifests are deterministic JSON evidence with SHA-256 integrity and
+optional dedicated-key HMAC-SHA256 authentication. HMAC proves possession of
+the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-19
+Latest automated rerun: 2026-08-25
 
 ## Environment
 
@@ -24,7 +24,11 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 124 passed, 0 failed
+- Automated tests: 139 passed, 0 failed
+- Forced-restart interrupted-history finalization: PASS
+- Protocol-v1 request and SSE envelope compatibility: PASS
+- Signed and unsigned artifact-manifest verification: PASS
+- Docker daemon integration: `NOT RUN` (CLI installed; daemon unavailable)
 - Focused GitHub Actions core and HTTP integration suite: 28 passed, 0 failed
 - Focused hardening regression suite: 20 of 20 repeated runs passed
 - Bundled demo process execution: PASS

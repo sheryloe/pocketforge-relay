@@ -18,6 +18,7 @@ Before submitting an application, attach observed and dated evidence such as rel
 | 2026-08-18 | Local artifact integrity candidate | Syntax checks passed; 123 tests passed and 0 failed with collection-time SHA-256 and authenticated download-header coverage | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-19 | Local artifact download verification | Syntax checks passed; 124 tests passed and 0 failed with pre-download identity, metadata, and SHA-256 checks | [`VERIFICATION.md`](VERIFICATION.md) |
 | 2026-08-25 | Trust-foundation integration | PR #3 merged 18 focused commits after GitHub Actions passed; local regression passed 133 tests with immutable snapshots, manifests, and an observed pinned external pilot | [PR #3](https://github.com/sheryloe/pocketforge-relay/pull/3), [`VERIFICATION.md`](VERIFICATION.md) |
+| 2026-08-25 | v0.2 completion candidate | Syntax checks and 139 tests passed locally with forced-restart finalization, protocol-v1 envelopes, and optional dedicated-key HMAC-SHA256 manifests | [`VERIFICATION.md`](VERIFICATION.md) |
 
 These entries show repository maintenance and local/browser verification. They
 do not establish downloads, active installations, external contributors, or
