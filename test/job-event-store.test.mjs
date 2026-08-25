@@ -31,6 +31,18 @@ test('projects the latest durable state without claiming process recovery', () =
   assert.equal(projectJobEvents(null), null);
 });
 
+test('deletes only the selected regular event log', async () => {
+  const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-events-delete-'));
+  try {
+    const store = new JobEventStore(path.join(sandbox, 'events'));
+    await store.append(jobId, { sequence: 1, type: 'complete', status: 'succeeded' });
+    await store.flush();
+    assert.equal(await store.delete(jobId), true);
+    assert.equal(await store.read(jobId), null);
+    assert.equal(await store.delete(jobId), false);
+  } finally { await fs.rm(sandbox, { recursive: true, force: true }); }
+});
+
 test('rejects unsafe ids, oversized records, and malformed persisted sequences', async () => {
   const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-events-bad-'));
   try {
