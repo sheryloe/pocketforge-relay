@@ -202,7 +202,9 @@ export class ActionRunManager {
   onEvent(run, event) {
     if (!event || typeof event !== 'object') return;
     if (event.type === 'status') {
-      if (typeof event.status === 'string') run.status = event.status;
+      if (typeof event.status === 'string') {
+        run.status = FINAL_STATUSES.has(event.status) ? 'collecting_evidence' : event.status;
+      }
       if (typeof event.remoteStatus === 'string') run.remoteStatus = event.remoteStatus;
       if (event.remoteConclusion === null || typeof event.remoteConclusion === 'string') run.remoteConclusion = event.remoteConclusion;
       if (typeof event.remoteUrl === 'string') run.remoteUrl = event.remoteUrl;

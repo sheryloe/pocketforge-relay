@@ -128,7 +128,7 @@ async function actionsApi(req,res,url,actionsManager) {
     if (match && req.method === 'GET') {
       const artifact=actionsManager.getArtifact(match[1],match[2]);
       if(!artifact) return json(res,404,{error:'GitHub Actions artifact not found.',code:'artifact_not_found'});
-      return sendFile(res,artifact.absolutePath,{'Content-Type':artifact.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(artifact.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+      return sendFile(res,artifact.absolutePath,{'Content-Type':artifact.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(artifact.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':artifact.sha256},{sha256:artifact.sha256});
     }
     return json(res,404,{error:'Actions API route not found.',code:'actions_route_not_found'});
   } catch (error) {

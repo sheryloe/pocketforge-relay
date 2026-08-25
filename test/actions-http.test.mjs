@@ -51,7 +51,7 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
     errorCode: null,
     error: null,
     logs: [],
-    artifacts: [{ id: '0', name: 'evidence.zip', relativePath: 'remote/evidence.zip', size: 12, contentType: 'application/zip', sha256: 'abc', githubDigest: null, sourceName: 'logs' }],
+    artifacts: [{ id: '0', name: 'evidence.zip', relativePath: 'remote/evidence.zip', size: 12, contentType: 'application/zip', sha256: 'c0cea64c613543e3273f05ff00bb093c9a3fa1345e2bc21ed8cf81f1aa824f95', githubDigest: null, sourceName: 'logs' }],
   };
   const actionsManager = {
     listTargets: () => [{ id: 'android-debug', name: 'Android debug', repository: 'https://github.com/example/mobile', workflow: 'android.yml', refs: ['main'], inputs: {}, artifactNames: [] }],
@@ -64,7 +64,7 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
     getRun: runId => runId === id ? publicRun : null,
     cancelRun: async runId => { calls.push(['cancel', runId]); return runId === id ? { ...publicRun, cancelRequested: true } : null; },
     getArtifact: (runId, artifactId) => runId === id && artifactId === '0'
-      ? { id: '0', name: 'evidence.zip', absolutePath: artifactPath, contentType: 'application/zip' }
+      ? { id: '0', name: 'evidence.zip', absolutePath: artifactPath, contentType: 'application/zip', sha256: 'c0cea64c613543e3273f05ff00bb093c9a3fa1345e2bc21ed8cf81f1aa824f95' }
       : null,
   };
   const server = createPocketForgeServer({ config: { publicDir: root, token }, manager: {}, actionsManager });
@@ -104,7 +104,12 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
     const artifact = await fetch(`${base}/api/actions/runs/${id}/artifacts/0`, { headers: authHeaders() });
     assert.equal(artifact.status, 200);
     assert.equal(artifact.headers.get('content-type'), 'application/zip');
+    assert.equal(artifact.headers.get('x-artifact-sha256'), 'c0cea64c613543e3273f05ff00bb093c9a3fa1345e2bc21ed8cf81f1aa824f95');
     assert.equal(await artifact.text(), 'verified zip');
+    await fs.writeFile(artifactPath, 'changed zip');
+    const changed = await fetch(`${base}/api/actions/runs/${id}/artifacts/0`, { headers: authHeaders() });
+    assert.equal(changed.status, 409);
+    assert.deepEqual(await changed.json(), { error: 'Artifact changed after collection.' });
 
     const unexpected = await request(base, '/api/actions/approvals', { method: 'POST', body: { targetId: 'android-debug', ref: 'main', secret: 'no' } });
     assert.equal(unexpected.response.status, 400);

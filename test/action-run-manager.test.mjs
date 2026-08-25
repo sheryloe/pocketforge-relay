@@ -147,6 +147,34 @@ test('manager bounds active runs and aborts an undispatched run', async () => {
   }
 });
 
+test('manager keeps a remote terminal result non-terminal until evidence finalizes', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-actions-finalize-'));
+  let releaseEvidence;
+  const evidenceGate = new Promise(resolve => { releaseEvidence = resolve; });
+  const adapter = fakeAdapter({
+    runApproved: async input => {
+      await input.onEvent({ type: 'status', status: 'succeeded', remoteStatus: 'completed', remoteConclusion: 'success' });
+      await evidenceGate;
+      return {
+        jobId: input.jobId, label: '', targetId: 'android-debug', repository: 'https://github.com/example/mobile',
+        ref: 'main', workflow: 'android.yml', status: 'succeeded', remoteRunId: 42,
+        remoteUrl: 'https://github.com/example/mobile/actions/runs/42', remoteStatus: 'completed',
+        remoteConclusion: 'success', artifacts: [], errorCode: null, error: null,
+      };
+    },
+  });
+  const manager = new ActionRunManager({ adapter, dataDir, maxLogLines: 100, randomId: () => runId });
+  try {
+    const approval = manager.createApproval({ targetId: 'android-debug', ref: 'main' });
+    manager.createRun({ approvalId: approval.id, decision: 'approve' });
+    const collecting = await waitFor(() => manager.getRun(runId)?.status === 'collecting_evidence' && manager.getRun(runId));
+    assert.equal(collecting.finishedAt, null);
+    releaseEvidence();
+    const completed = await waitFor(() => manager.getRun(runId)?.finishedAt && manager.getRun(runId));
+    assert.equal(completed.status, 'succeeded');
+  } finally { releaseEvidence(); await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
+});
+
 function fakeAdapter(overrides = {}) {
   return {
     listTargets: () => [{ id: 'android-debug', name: 'Android debug', repository: 'https://github.com/example/mobile', workflow: 'android.yml', refs: ['main'], inputs: {}, artifactNames: [] }],
