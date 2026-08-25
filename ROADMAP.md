@@ -15,8 +15,9 @@ Android-device execution remain separate `NOT RUN` integration claims.
 ## v0.2 - Durable trust foundation (next)
 
 - Versioned protocol schema and adapter contracts.
-- Append-only event persistence and restart-readable audit history; current-state
-  projection and interrupted-process recovery remain planned.
+- Append-only event persistence, restart-readable audit history, and an
+  authenticated current-state projection are implemented. Interrupted running
+  processes are not resumed after restart and remain planned.
 - Rootless container runner, immutable evidence manifests, provenance, and
   tighter resource isolation.
 - Collection-time and pre-download SHA-256 verification for local artifacts is
