@@ -61,6 +61,12 @@ logs, artifacts, approvals, retained evidence, and connected devices.
 ## Remaining risks
 Repository scripts still have host-account authority, redaction cannot prove that every possible secret format is removed, no built-in TLS/rate limiting/rotation/RBAC exists, and workspace separation is not a sandbox. Completed-record eviction does not delete job workspaces, so operators must manage disk retention separately.
 
+The proposal-only agent boundary treats model output as untrusted input. The
+relay reveals the exact bounded evidence payload before one-shot consent and
+rejects executable fields, but redaction cannot prove every possible secret was
+removed and a configured provider would become an external data recipient. No
+production provider is currently connected.
+
 The optional GitHub credential remains in relay process memory. A person who
 can change a workflow on an allowlisted ref controls what that workflow runs,
 so protected refs and a least-privilege, expiring credential remain operator

@@ -45,8 +45,12 @@ documented legacy job request remains compatible.
 
 ## v0.3 - Human-governed agent loop (target)
 
-- Provider-neutral agent adapter and conformance suite.
-- Evidence-assisted issue triage, failure classification, and repair proposals.
+- A provider-neutral proposal-only manager and conformance suite now enforce
+  server-owned evidence previews, expiring one-shot consent, bounded output,
+  fixed timeouts, and no execution. A production provider transport remains
+  unconfigured and live model use is `NOT RUN`.
+- Evidence-assisted issue triage, failure classification, and repair proposals
+  remain to be connected to the mobile UI and a configured provider.
 - Agent-assisted repair branches with explicit human approval.
 - Signed user/device pairing, policy adapters, and approval before install,
   merge, release, or deploy.

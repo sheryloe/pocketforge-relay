@@ -83,6 +83,12 @@ authenticated routes provide list, prepare, approve, status, evidence download,
 and explicit evidence deletion operations; request bodies never select a command
 or filesystem path.
 
+The proposal-only agent core accepts only server-issued local-job or Actions-run
+identifiers and a fixed intent. It resolves and bounds evidence inside the
+relay, exposes that exact payload for explicit one-shot consent, then validates
+provider output as non-executable structured advice. It imports no filesystem
+or process runner and is not wired to a production provider by default.
+
 Terminal Android evidence uses an HMAC-authenticated manifest plus exact byte
 sizes and SHA-256 digests for retained files. Startup scans the action store,
 rejects unexpected, linked, escaping, or invalid entries, verifies complete

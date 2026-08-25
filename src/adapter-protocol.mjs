@@ -45,7 +45,7 @@ export function relayCapabilities({ actionsEnabled = false, deviceEnabled = fals
       adapterDescriptor({ id: 'local-runner', kind: 'runner', enabled: true, capabilities: ['artifacts', 'jobs', 'sse-logs'] }),
       adapterDescriptor({ id: 'github-actions', kind: 'actions', enabled: actionsEnabled, capabilities: ['artifact-zip', 'cancel', 'dispatch', 'status'] }),
       adapterDescriptor({ id: 'android-device', kind: 'device', enabled: deviceEnabled, capabilities: ['install', 'logcat', 'screenshot', 'verify-apk'] }),
-      adapterDescriptor({ id: 'ai-agent', kind: 'agent', enabled: false, capabilities: [] }),
+      adapterDescriptor({ id: 'ai-agent', kind: 'agent', enabled: false, capabilities: ['evidence-preview', 'explicit-consent', 'structured-proposal'] }),
     ]),
   });
 }
