@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeArtifactManifest, writeBuildSummary } from '../src/artifacts.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, verifyArtifactManifest, writeArtifactManifest, writeBuildSummary } from '../src/artifacts.mjs';
 
 test('artifact paths are relative to the canonical source directory', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-artifacts-'));
@@ -41,6 +41,17 @@ test('writes one deterministic versioned manifest with a digest', async () => {
     assert.equal(manifest.schemaVersion, 1); assert.match(manifest.sha256, /^[a-f0-9]{64}$/);
     assert.equal(JSON.parse(await fs.readFile(path.join(temp, 'manifest.json'), 'utf8')).artifacts[0].sha256, artifact.sha256);
     await assert.rejects(writeArtifactManifest({ job, artifacts: [artifact], snapshotDir: temp }), /EEXIST/);
+  } finally { await fs.rm(temp, { recursive: true, force: true }); }
+});
+
+test('detects a manifest changed after creation', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-manifest-tamper-'));
+  try {
+    const job = { id: 'job', repository: null, ref: null, resolvedCommit: null, presetId: 'demo-web' };
+    const manifest = await writeArtifactManifest({ job, artifacts: [], snapshotDir: temp });
+    assert.equal((await verifyArtifactManifest({ manifest, snapshotDir: temp })).jobId, 'job');
+    await fs.appendFile(path.join(temp, 'manifest.json'), ' ');
+    await assert.rejects(verifyArtifactManifest({ manifest, snapshotDir: temp }), /changed after creation/);
   } finally { await fs.rm(temp, { recursive: true, force: true }); }
 });
 
