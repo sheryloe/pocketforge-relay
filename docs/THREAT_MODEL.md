@@ -64,10 +64,11 @@ Repository scripts still have host-account authority, redaction cannot prove tha
 The optional GitHub credential remains in relay process memory. A person who
 can change a workflow on an allowlisted ref controls what that workflow runs,
 so protected refs and a least-privilege, expiring credential remain operator
-requirements. Actions approvals, run ownership, and status are in memory only;
-after restart, an unresolved remote workflow cannot be cancelled through the
-old relay instance. Shutdown aborts local observation but does not itself prove
-remote cancellation.
+requirements. Actions approvals and live cancellation ownership remain in
+memory only. Public run history is append-only and restart-readable, but after
+restart an unresolved remote workflow is only marked `needs_attention`; it is
+not resumed and cannot be cancelled through the old ownership binding. Shutdown
+aborts local observation but does not itself prove remote cancellation.
 
 Android snapshot and evidence isolation is not a security boundary while the
 relay and repository-controlled processes share an operating-system account.

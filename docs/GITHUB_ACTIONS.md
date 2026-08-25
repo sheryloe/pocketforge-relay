@@ -26,14 +26,14 @@ Implemented core:
   header for every retained Actions artifact;
 - token removal before following temporary download redirects;
 - disabled-by-default environment configuration, server-owned run workspaces,
-  bounded concurrent in-memory run state, and graceful observation shutdown;
+  bounded concurrent state, append-only public run history, and graceful
+  observation shutdown;
 - authenticated target, approval, dispatch, status, cancellation, and artifact
   download routes whose public representations omit credentials and absolute
   filesystem paths.
 
 Still not integrated:
 
-- persistence across relay restarts;
 - webhook observation;
 - live cancellation, private-repository access, or self-hosted runners.
 
@@ -138,7 +138,14 @@ is therefore never retried automatically. If the event observer fails after a
 successful dispatch, the result retains the remote run ID and URL and also
 becomes `needs_attention`; the consumed approval cannot be replayed.
 
-Cancellation is available only while the same in-memory adapter instance owns
+Completed runs, bounded logs, and retained artifact metadata are restored from
+append-only records after restart. Absolute paths and credentials are never
+persisted; artifact paths are reconstructed only beneath the run workspace and
+rechecked before download. A record that was non-terminal at restart becomes
+`needs_attention` with a fixed interruption reason. The relay never redispatches
+or claims to resume that remote workflow.
+
+Cancellation is available only while the same adapter instance owns
 an active or not-yet-resolved `(target, run ID)` binding created by its own
 successful dispatch. A caller cannot use an allowlisted repository plus an
 arbitrary run ID to cancel someone else's workflow. The binding is removed once

@@ -64,12 +64,14 @@ the opened-handle identity, metadata, and SHA-256 checks before sending headers.
 Local artifacts are not yet immutable snapshots, so clients must still verify
 downloaded bytes against the advertised digest.
 
-The optional Actions run manager is a separate in-memory admission and state
-boundary. It accepts only server-configured targets, derives every workspace
-under `POCKETFORGE_DATA_DIR/action-runs`, and never puts its GitHub credential
-or absolute paths in public state. It reuses the local concurrency, retention,
-log, and artifact limits. Shutdown aborts and waits for observation but does not
-claim an already-dispatched workflow was remotely cancelled.
+The optional Actions run manager is a separate admission and state boundary. It
+accepts only server-configured targets, derives every workspace under
+`POCKETFORGE_DATA_DIR/action-runs`, and never puts its GitHub credential or
+absolute paths in public or append-only durable state. Completed runs, bounded
+logs, and retained artifact metadata are restart-readable. A durable
+non-terminal run is finalized as `needs_attention` after restart without remote
+redispatch or process resumption. Shutdown aborts and waits for observation but
+does not claim an already-dispatched workflow was remotely cancelled.
 
 The optional device-action runtime is also disabled by default. It resolves a
 succeeded job and APK artifact by server-issued identifiers, snapshots that APK

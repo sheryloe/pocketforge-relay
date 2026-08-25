@@ -6,6 +6,9 @@
   artifacts finish collecting, then publish the true terminal state.
 - Publish each retained Actions artifact SHA-256 and re-verify the file before
   download headers, rejecting post-collection changes with HTTP 409.
+- Persist bounded public Actions state in the existing append-only event store,
+  restore completed runs and artifact downloads after restart, and finalize
+  interrupted observations as `needs_attention` without redispatch.
 
 ## 2026-08-25 - v0.5 contributor ecosystem foundation
 
