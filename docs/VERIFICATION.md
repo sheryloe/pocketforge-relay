@@ -1,5 +1,9 @@
 # MVP Verification Record
 
+Artifact manifests are deterministic JSON evidence with their own SHA-256.
+They provide integrity binding, not signer identity; signature verification is
+`NOT RUN` and must not be inferred from the manifest digest.
+
 Initial record: 2026-08-13
 
 Latest automated rerun: 2026-08-19
