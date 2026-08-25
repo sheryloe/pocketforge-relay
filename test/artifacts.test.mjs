@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { collectArtifacts, publicArtifacts, writeBuildSummary } from '../src/artifacts.mjs';
+import { collectArtifacts, publicArtifacts, snapshotArtifacts, writeBuildSummary } from '../src/artifacts.mjs';
 
 test('artifact paths are relative to the canonical source directory', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-artifacts-'));
@@ -30,6 +30,19 @@ test('artifact paths are relative to the canonical source directory', async () =
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
+});
+
+test('snapshots keep collected bytes stable after workspace mutation', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-snapshot-'));
+  try {
+    const source = path.join(temp, 'source'); await fs.mkdir(path.join(source, 'dist'), { recursive: true });
+    const file = path.join(source, 'dist', 'app.js'); await fs.writeFile(file, 'stable');
+    const artifacts = await collectArtifacts({ sourceDir: source, preset: { artifactMode: 'web' }, maxFiles: 10, maxBytes: 1024 });
+    const snapshots = await snapshotArtifacts({ artifacts, snapshotDir: path.join(temp, 'snapshots'), maxBytes: 1024 });
+    await assert.rejects(snapshotArtifacts({ artifacts, snapshotDir: path.join(temp, 'snapshots'), maxBytes: 1024 }), /EEXIST/);
+    await fs.writeFile(file, 'changed');
+    assert.equal(await fs.readFile(snapshots[0].absolutePath, 'utf8'), 'stable');
+  } finally { await fs.rm(temp, { recursive: true, force: true }); }
 });
 
 test('build summary preserves the fixed failure classification', async () => {
