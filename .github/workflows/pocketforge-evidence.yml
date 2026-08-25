@@ -1,0 +1,34 @@
+name: PocketForge Evidence
+run-name: PocketForge evidence ${{ inputs.pocketforge_request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      pocketforge_request_id:
+        description: PocketForge audit identifier
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write bounded evidence
+        env:
+          REQUEST_ID: ${{ inputs.pocketforge_request_id }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: |
+          node -e "const fs=require('fs'); const e=process.env; fs.writeFileSync('evidence.json', JSON.stringify({schemaVersion:1,requestId:e.REQUEST_ID,repository:e.REPOSITORY,commit:e.COMMIT_SHA,workflowRunId:e.WORKFLOW_RUN_ID,status:'PASS'}, null, 2)+'\n')"
+      - name: Upload bounded evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: relay-evidence
+          path: evidence.json
+          if-no-files-found: error
+          retention-days: 7
+
