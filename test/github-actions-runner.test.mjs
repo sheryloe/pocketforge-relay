@@ -179,7 +179,7 @@ test('successful remote run without required evidence becomes needs_attention', 
     },
     listRunArtifacts: async () => [],
   });
-  const adapter = new GitHubActionsRunnerAdapter({ client, catalog: catalog(), pollIntervalMs: 1000, runTimeoutMs: 5000, maxArtifactBytes: 4096 });
+  const adapter = new GitHubActionsRunnerAdapter({ client, catalog: catalog(), pollIntervalMs: 1000, runTimeoutMs: 5000, maxArtifactBytes: 4096, sleep: async () => {} });
   try {
     const approval = adapter.createApproval({ targetId: 'android-debug', ref: 'main' });
     const result = await adapter.runApproved({ approvalId: approval.id, decision: 'approve', jobId: 'job-no-evidence', workspace: directory });
@@ -193,6 +193,31 @@ test('successful remote run without required evidence becomes needs_attention', 
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }
+});
+
+test('rechecks a bounded artifact list after successful-run publication lag', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-actions-lag-'));
+  let lists = 0;
+  let sleeps = 0;
+  const client = fakeClient({
+    dispatchWorkflow: async () => ({ runId: 123, runUrl: 'https://api.github.com/repos/example/mobile-app/actions/runs/123', htmlUrl: 'https://github.com/example/mobile-app/actions/runs/123' }),
+    getWorkflowRun: async () => ({ notModified: false, etag: null, pollIntervalMs: null, run: remoteRun('completed', 'success') }),
+    downloadRunLogs: async ({ destination }) => { await fs.writeFile(destination, 'logs'); return { path: destination, size: 4, sha256: 'logs-sha' }; },
+    listRunArtifacts: async () => ++lists < 3 ? [] : [{ id: 44, name: 'app-debug-apk', size: 50, expired: false, digest: 'sha256:github' }],
+    downloadArtifact: async ({ destination }) => { await fs.writeFile(destination, 'artifact'); return { path: destination, size: 8, sha256: 'artifact-sha' }; },
+  });
+  const adapter = new GitHubActionsRunnerAdapter({
+    client, catalog: catalog(), pollIntervalMs: 1000, runTimeoutMs: 5000,
+    maxArtifactBytes: 4096, sleep: async () => { sleeps += 1; },
+  });
+  try {
+    const approval = adapter.createApproval({ targetId: 'android-debug', ref: 'main' });
+    const result = await adapter.runApproved({ approvalId: approval.id, decision: 'approve', jobId: 'job-lagged-evidence', workspace: directory });
+    assert.equal(result.status, 'succeeded');
+    assert.equal(result.artifacts.length, 2);
+    assert.equal(lists, 3);
+    assert.equal(sleeps, 2);
+  } finally { await fs.rm(directory, { recursive: true, force: true }); }
 });
 
 test('cancel delegates only a remote run created and retained by this adapter instance', async () => {
