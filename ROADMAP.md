@@ -61,3 +61,15 @@ opt-in, and approval-gate tests for install, merge, release, and deploy.
 
 Dates and scope are intentionally evidence-driven. Planned capabilities are not
 represented as implemented until code and verification records exist.
+
+## v0.5 - Contributor ecosystem foundation (delivered)
+
+- Bounded bug, pilot, adapter, and good-first-issue forms with private security
+  routing and explicit trust/verification questions.
+- Five real starter issues with independently testable acceptance criteria,
+  linked from the maintained contribution guide and EN/KO/JA READMEs.
+- Three evidence-focused pilot slots and a strict machine-verifiable report
+  contract with two recorded clean-checkout reports.
+- External contributors, downstream adapters, downloads, active installations,
+  and response-time history remain unobserved; no adoption metric is inferred
+  from these contribution paths.

@@ -201,6 +201,8 @@ Android SDK·단말 검사도 `NOT RUN`이며 계약 테스트로 성공을 추�
 좋은 첫 기여에는 어댑터 적합성 테스트 픽스처, 실패 파서 테스트, 접근성·번역 수정,
 민감 정보를 제거한 재현 가능한 파일럿 보고서가 포함됩니다. 구현을 약속하거나
 배정하기 전에 유지관리자가 범위를 확인합니다.
+현재 관리 중인 입문 작업 5개는
+[`docs/GOOD_FIRST_ISSUES.md`](docs/GOOD_FIRST_ISSUES.md)에 정리되어 있습니다.
 
 [범위가 제한된 첫 이슈를 제안](https://github.com/sheryloe/pocketforge-relay/issues/new?template=good-first-issue.yml)하거나
 [파일럿 보고서 양식](https://github.com/sheryloe/pocketforge-relay/issues/new?template=pilot-report.yml)으로

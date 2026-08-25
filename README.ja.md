@@ -220,6 +220,8 @@ flowchart LR
 最初の貢献には、アダプター適合性テスト用フィクスチャ、失敗パーサーテスト、
 アクセシビリティ・翻訳修正、機密情報を除いた再現可能なパイロット報告が
 適しています。実装を約束または割り当てる前にメンテナーが範囲を確認します。
+現在管理している入門タスク5件は
+[`docs/GOOD_FIRST_ISSUES.md`](docs/GOOD_FIRST_ISSUES.md) にまとめています。
 
 [範囲を限定した最初の Issue を提案](https://github.com/sheryloe/pocketforge-relay/issues/new?template=good-first-issue.yml)するか、
 [パイロット報告フォーム](https://github.com/sheryloe/pocketforge-relay/issues/new?template=pilot-report.yml)から

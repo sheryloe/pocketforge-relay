@@ -24,7 +24,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 151 passed, 0 failed
+- Automated tests: 153 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -89,6 +89,8 @@ npm test
 - English/Korean/Japanese AI-direction, implementation-boundary, data-consent,
   Actions, and Android claim parity: PASS
 - Relative Markdown links in the maintained READMEs and roadmap: PASS
+- Five live good-first-issue links and bounded proposal-form contracts: PASS
+- External contributor or downstream adapter participation: `NOT RUN`
 - Protocol-v1 adapter descriptors and authenticated capability discovery: PASS
 - Bounded append-only job history and restart-readable audit events: PASS
 - Fixed, non-reflective npm, Gradle, and CMake failure diagnostics: PASS
