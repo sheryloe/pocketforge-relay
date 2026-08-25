@@ -94,6 +94,18 @@ test('HTTP API serves authenticated durable job history', async () => {
   } finally { await closeServer(server); }
 });
 
+test('HTTP API serves an authenticated restart projection', async () => {
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const manager = { getJobProjection: async value => value === id ? { jobId: id, status: 'succeeded' } : null };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/jobs/${id}/projection`, { headers: { Authorization: 'Bearer test-token' } });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).job.status, 'succeeded');
+  } finally { await closeServer(server); }
+});
+
 test('artifact download publishes the collection-time SHA-256 digest', async () => {
   const sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-http-artifact-'));
   const file = path.join(sandbox, 'artifact.txt');

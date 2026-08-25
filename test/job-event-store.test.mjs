@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { JobEventStore } from '../src/job-event-store.mjs';
+import { JobEventStore, projectJobEvents } from '../src/job-event-store.mjs';
 
 const jobId = '123e4567-e89b-42d3-a456-426614174000';
 
@@ -18,6 +18,17 @@ test('appends bounded job events and reads them after a new store instance start
     assert.deepEqual(recovered.map(event => [event.sequence, event.type, event.status]), [[1, 'status', 'queued'], [2, 'status', 'running']]);
     assert.ok(recovered.every(event => event.schemaVersion === 1 && event.jobId === jobId));
   } finally { await fs.rm(sandbox, { recursive: true, force: true }); }
+});
+
+test('projects the latest durable state without claiming process recovery', () => {
+  const projected = projectJobEvents([
+    { jobId, type: 'status', status: 'queued' },
+    { jobId, type: 'step', currentStep: 'Build' },
+    { jobId, type: 'artifacts', artifacts: [{ id: '0', sha256: 'a'.repeat(64) }] },
+    { jobId, type: 'complete', status: 'succeeded', finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null },
+  ]);
+  assert.deepEqual(projected, { jobId, status: 'succeeded', currentStep: null, finishedAt: '2026-08-20T00:00:00.000Z', exitCode: 0, error: null, artifacts: [{ id: '0', sha256: 'a'.repeat(64) }] });
+  assert.equal(projectJobEvents(null), null);
 });
 
 test('rejects unsafe ids, oversized records, and malformed persisted sequences', async () => {
