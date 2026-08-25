@@ -97,7 +97,9 @@ The current Node.js MVP includes:
 - a separate workspace for every job;
 - allowlisted build presets instead of arbitrary shell input;
 - Server-Sent Events for logs and state changes;
+- protocol-v1 request/SSE envelopes plus restart finalization of interrupted audit histories;
 - authenticated artifact downloads and a zero-dependency bundled demo;
+- relay-owned artifact snapshots and optional dedicated-key HMAC-SHA256 manifests;
 - Node.js, Android Gradle, and CMake presets;
 - a child-process environment allowlist, defensive secret redaction, and
   asynchronous shutdown that waits for process and artifact finalization;

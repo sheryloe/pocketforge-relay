@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-25 - v0.2 completion candidate
+
+- Finalize valid non-terminal job histories as interrupted during startup.
+- Accept protocol-v1 job envelopes and version every job SSE payload.
+- Authenticate artifact manifests with an optional dedicated HMAC-SHA256 key.
+- Keep container daemon, live Actions, and physical Android evidence explicit
+  as `NOT RUN` external gates.
+
 ## 2026-08-20
 
 - Added authenticated current-state projection from durable job events.
