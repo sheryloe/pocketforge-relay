@@ -20,16 +20,17 @@ Android-device execution remain separate `NOT RUN` integration claims.
 - Append-only event persistence, restart-readable audit history, authenticated
   current-state projection, and startup finalization of interrupted histories
   are implemented. Orphaned OS processes are never resumed.
-- Rootless container runner, immutable evidence manifests, provenance, and
-  tighter resource isolation.
+- An opt-in digest-pinned container boundary now wraps fixed preset steps with
+  non-root execution, no network, read-only rootfs, dropped capabilities, and
+  CPU/memory/PID/tmpfs limits. Real daemon execution remains `NOT RUN` here.
 - Collection-time and pre-download SHA-256 verification, relay-owned local
   snapshots, and optional dedicated-key HMAC-SHA256 manifests are implemented.
   External build-service provenance remains planned.
 - Fixed public diagnostics for common Gradle, npm, and CMake failures are
   implemented; fixture coverage should expand with sanitized pilot evidence.
-- One reproducible, dependency-free syntax/API pilot against a commit-pinned
-  trusted external Node.js repository is recorded. Its dependency-based
-  upstream `npm test` remains `NOT RUN` because that revision has no lockfile.
+- The dependency-free external `yocto-queue` pilot remains recorded. A second
+  clean remote-clone self-pilot at commit `f19848e` exercised committed-lockfile
+  `npm ci --ignore-scripts` and all 145 upstream tests successfully.
 
 Exit evidence for v0.2 includes versioned compatibility fixtures, forced-restart
 recovery tests, non-root/default-deny/resource-limit container checks, and a

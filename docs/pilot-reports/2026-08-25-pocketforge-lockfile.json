@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-08-25",
+  "repository": "https://github.com/sheryloe/pocketforge-relay",
+  "resolvedCommit": "f19848e4f9153fc2bc681a6e0c497898b5ddf237",
+  "cleanCheckout": true,
+  "runtime": "Node.js v24.15.0 / npm 11.12.1 / Windows",
+  "commands": [
+    { "command": "npm.cmd ci --ignore-scripts --no-audit --no-fund", "exitCode": 0 },
+    { "command": "npm.cmd test", "exitCode": 0 }
+  ],
+  "artifacts": [
+    { "path": "package-lock.json", "sha256": "c7eded48c1c628c87123c0f4662d4b51feadb70eab838a0ee0b6b3e30ea86d81" },
+    { "path": "package.json", "sha256": "73e9a3cdd3840ec5aeaca383ee351ca5e3cd13c8b590a2527fd570d89789b037" }
+  ],
+  "notRun": [
+    "container execution: NOT RUN because the installed Docker CLI could not reach a daemon"
+  ]
+}

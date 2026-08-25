@@ -18,6 +18,8 @@ silently falling back.
 | `MAX_ARTIFACT_FILES` | `100` | Integer from 1 to 1000 |
 | `MAX_ARTIFACT_BYTES` | `26214400` | Integer from 1024 to 262144000 |
 | `POCKETFORGE_ARTIFACT_INTEGRITY_KEY` | Disabled | Canonical base64url encoding of at least 32 random bytes |
+| `POCKETFORGE_CONTAINER_RUNTIME` | Disabled | Absolute path to a Docker-compatible CLI |
+| `POCKETFORGE_CONTAINER_IMAGE` | Disabled | Lowercase image reference pinned as `name@sha256:<64 lowercase hex>` |
 | `POCKETFORGE_ACTIONS_TARGETS_FILE` | Disabled | Path to the server-owned Actions target JSON catalog |
 | `POCKETFORGE_GITHUB_TOKEN` | Disabled | Non-empty GitHub token, no surrounding whitespace or line breaks, at most 4096 characters |
 | `POCKETFORGE_ADB_PATH` | Disabled | Absolute path to `adb` |
@@ -51,6 +53,16 @@ tokens, cloud credentials, package registry tokens, proxy credentials, and
 arbitrary host variables are not forwarded. Authenticated dependency installs
 that require ambient environment credentials are therefore outside the v0.1
 contract.
+
+Container execution is enabled only when both container variables are present.
+Each preset build step is wrapped in one fixed `run` argument array with no
+shell, no network, a read-only root filesystem, all capabilities dropped,
+`no-new-privileges`, UID/GID 65532, and CPU, memory, PID, and temporary-filesystem
+limits. Only the relay-created source workspace is mounted writable. Repository
+checkout still happens on the host before the build boundary. Network-disabled
+dependency installation can fail unless the selected digest-pinned toolchain
+already provides the required inputs; enabling this mode does not turn the
+relay into a hardened multi-tenant sandbox.
 
 GitHub Actions support is disabled unless both
 `POCKETFORGE_ACTIONS_TARGETS_FILE` and `POCKETFORGE_GITHUB_TOKEN` are present.

@@ -89,11 +89,30 @@ function deviceActionsConfig(env) {
   });
 }
 
+function containerConfig(env) {
+  const runtimePath = env.POCKETFORGE_CONTAINER_RUNTIME;
+  const image = env.POCKETFORGE_CONTAINER_IMAGE;
+  const runtimeSupplied = runtimePath !== undefined && runtimePath !== '';
+  const imageSupplied = image !== undefined && image !== '';
+  if (runtimeSupplied !== imageSupplied) {
+    throw new Error('POCKETFORGE_CONTAINER_RUNTIME and POCKETFORGE_CONTAINER_IMAGE must be configured together.');
+  }
+  if (!runtimeSupplied) return Object.freeze({ enabled: false, runtimePath: null, image: null });
+  if (typeof runtimePath !== 'string' || runtimePath !== runtimePath.trim() || !path.isAbsolute(runtimePath) || /[\0\r\n]/.test(runtimePath)) {
+    throw new Error('POCKETFORGE_CONTAINER_RUNTIME must be an absolute trimmed path without line breaks.');
+  }
+  if (typeof image !== 'string' || !/^[a-z0-9][a-z0-9./_-]*@sha256:[a-f0-9]{64}$/.test(image)) {
+    throw new Error('POCKETFORGE_CONTAINER_IMAGE must use a canonical sha256 digest.');
+  }
+  return Object.freeze({ enabled: true, runtimePath: path.resolve(runtimePath), image });
+}
+
 export function loadConfig(env = process.env) {
   const suppliedToken = env.POCKETFORGE_TOKEN?.trim();
   if (suppliedToken && suppliedToken.length < 24) throw new Error('POCKETFORGE_TOKEN must contain at least 24 characters.');
   const actions = actionsConfig(env);
   const deviceActions = deviceActionsConfig(env);
+  const container = containerConfig(env);
   const dataDir = path.resolve(env.POCKETFORGE_DATA_DIR || path.join(ROOT_DIR, '.pocketforge'));
   const publicDir = path.join(ROOT_DIR, 'public');
   if (pathsOverlap(dataDir, publicDir)) {
@@ -116,6 +135,7 @@ export function loadConfig(env = process.env) {
     maxArtifactFiles: intEnv('MAX_ARTIFACT_FILES', env.MAX_ARTIFACT_FILES, 100, 1, 1_000),
     maxArtifactBytes: intEnv('MAX_ARTIFACT_BYTES', env.MAX_ARTIFACT_BYTES, 25 * 1024 * 1024, 1_024, 250 * 1024 * 1024),
     artifactIntegrityKey: optionalSecret(env, 'POCKETFORGE_ARTIFACT_INTEGRITY_KEY', 32),
+    container,
     actions,
     deviceActions,
   });

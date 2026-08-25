@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-25 - v0.2 container boundary
+
+- Add an opt-in, digest-pinned container wrapper for fixed preset steps with a
+  non-root identity, no network, read-only rootfs, dropped capabilities, and
+  bounded CPU, memory, PIDs, and tmpfs.
+- Record a clean remote-clone lockfile pilot that passes `npm ci --ignore-scripts`
+  and all 145 tests at commit `f19848e`.
+- Keep real Docker daemon execution explicit as `NOT RUN`.
+
 ## 2026-08-25 - v0.1 lifecycle completion
 
 - Discover completed jobs after a relay restart and retain their bounded logs,
