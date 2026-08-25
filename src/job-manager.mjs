@@ -113,6 +113,7 @@ export class JobManager {
   }
 
   async deleteJobData(id) {
+    await this.eventStore.flush();
     const projection = await this.getJobProjection(id);
     if (!projection) return false;
     if (!FINAL.has(projection.status)) throw statusError('Only terminal job data can be deleted.', 409);
