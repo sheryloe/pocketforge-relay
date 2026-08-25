@@ -7,12 +7,14 @@
 - Contract-tested, disabled-by-default GitHub Actions and Android device-evidence
   adapters with authenticated APIs.
 - English, Korean, and Japanese UI and maintained README editions.
+- Restart-readable jobs in the mobile UI, verified recovered-artifact downloads,
+  and explicit full deletion for one terminal job's retained data.
 - Security, protocol, architecture, and verification documentation.
 
 Contract tests cover these paths, but live external Actions dispatch and physical
 Android-device execution remain separate `NOT RUN` integration claims.
 
-## v0.2 - Durable trust foundation (next)
+## v0.2 - Durable trust foundation (in progress)
 
 - Versioned protocol schema and adapter contracts.
 - Append-only event persistence, restart-readable audit history, authenticated
