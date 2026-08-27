@@ -49,8 +49,10 @@ documented legacy job request remains compatible.
   server-owned evidence previews, expiring one-shot consent, bounded output,
   fixed timeouts, and no execution. A production provider transport remains
   unconfigured and live model use is `NOT RUN`.
+- Authenticated status, preview, and explicit-approval HTTP routes expose that
+  contract when a manager is configured; the default server remains disabled.
 - Evidence-assisted issue triage, failure classification, and repair proposals
-  remain to be connected to the mobile UI and a configured provider.
+  remain to be connected to the mobile UI and a configured provider transport.
 - Agent-assisted repair branches with explicit human approval.
 - Signed user/device pairing, policy adapters, and approval before install,
   merge, release, or deploy.

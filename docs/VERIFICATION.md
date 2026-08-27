@@ -6,7 +6,7 @@ the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-26
+Latest automated rerun: 2026-08-27
 
 ## Environment
 
@@ -24,7 +24,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 162 passed, 0 failed
+- Automated tests: 164 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -101,6 +101,8 @@ npm test
 - Proposal-only provider-neutral adapter and bounded evidence preview: PASS
 - Expiring explicit consent, single use, timeout, and structured-output rejection: PASS
 - Live external AI provider and model output: `NOT RUN`
+- Authenticated proposal-agent status, preview, and approval HTTP contract: PASS
+- Disabled-by-default proposal routes and capability state: PASS
 - Collection-time local artifact SHA-256 and download digest header: PASS
 - Changed local artifact rejection before download response headers: PASS
 - Current Android-integrated PWA at 390 x 844 in the Codex in-app browser: PASS

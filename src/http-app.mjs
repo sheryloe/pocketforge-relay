@@ -10,13 +10,13 @@ import { listPresets } from './presets.mjs';
 import { applySecurityHeaders, safeStaticPath, tokenMatches } from './security.mjs';
 const MIME = new Map([['.html','text/html; charset=utf-8'],['.css','text/css; charset=utf-8'],['.js','text/javascript; charset=utf-8'],['.mjs','text/javascript; charset=utf-8'],['.json','application/json; charset=utf-8'],['.webmanifest','application/manifest+json; charset=utf-8'],['.svg','image/svg+xml'],['.png','image/png']]);
 const FINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled']);
-export function createPocketForgeServer({ config, manager, actionsManager = null, deviceActionsRuntime = null }) {
+export function createPocketForgeServer({ config, manager, actionsManager = null, deviceActionsRuntime = null, proposalAgentManager = null }) {
   const eventStreamClosers = new Set();
   const server = http.createServer(async (req,res) => {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     try {
       if (url.pathname === '/api/health' && req.method === 'GET') return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()});
-      if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,eventStreamClosers); }
+      if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
       return await staticFile(res,config.publicDir,url.pathname);
     } catch (e) { if (!res.headersSent) { applySecurityHeaders(res,{api:url.pathname.startsWith('/api/')}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
   });
@@ -25,13 +25,14 @@ export function createPocketForgeServer({ config, manager, actionsManager = null
   };
   return server;
 }
-async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,eventStreamClosers) {
+async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers) {
   if (url.pathname === '/api/actions/targets' || url.pathname.startsWith('/api/actions/')) return actionsApi(req,res,url,actionsManager);
+  if (url.pathname === '/api/agent' || url.pathname.startsWith('/api/agent/')) return proposalAgentApi(req,res,url,proposalAgentManager);
   if (url.pathname === '/api/devices' || url.pathname === '/api/device-actions' || url.pathname.startsWith('/api/device-actions/')) {
     return deviceActionsApi(req,res,url,manager,deviceActionsRuntime);
   }
   if (url.pathname === '/api/presets' && req.method === 'GET') return json(res,200,{presets:listPresets()});
-  if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,relayCapabilities({actionsEnabled:Boolean(actionsManager),deviceEnabled:Boolean(deviceActionsRuntime)}));
+  if (url.pathname === '/api/capabilities' && req.method === 'GET') return json(res,200,relayCapabilities({actionsEnabled:Boolean(actionsManager),deviceEnabled:Boolean(deviceActionsRuntime),agentEnabled:Boolean(proposalAgentManager)}));
   if (url.pathname === '/api/jobs' && req.method === 'GET') return json(res,200,{jobs:manager.listJobs()});
   if (url.pathname === '/api/job-history' && req.method === 'GET') return json(res,200,{jobs:await manager.listJobHistory()});
   if (url.pathname === '/api/jobs' && req.method === 'POST') { const body = await readJson(req,64*1024); try { return json(res,202,{job:manager.createJob(unwrapProtocolRequest(body))}); } catch(e) { return json(res,e.statusCode||400,{error:e.message}); } }
@@ -44,6 +45,23 @@ async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,event
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/events$/i); if (m && req.method === 'GET') return streamJobEvents(req,res,manager,m[1],eventStreamClosers);
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/artifacts\/([0-9]+)$/i); if (m && req.method === 'GET') { const a=await manager.getArtifact(m[1],m[2]); if(!a) return json(res,404,{error:'Artifact not found.'}); return sendFile(res,a.absolutePath,{'Content-Type':a.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(a.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':a.sha256},{sha256:a.sha256}); }
   return json(res,404,{error:'API route not found.'});
+}
+
+async function proposalAgentApi(req,res,url,manager) {
+  if (url.pathname === '/api/agent' && req.method === 'GET') return json(res,200,{enabled:Boolean(manager),adapter:manager?.descriptor() ?? null});
+  if (!manager) return json(res,503,{error:'Proposal agent integration is disabled.',code:'proposal_agent_disabled'});
+  try {
+    if (url.pathname === '/api/agent/previews' && req.method === 'POST') {
+      return json(res,201,{preview:await manager.createPreview(await readJson(req,16*1024))});
+    }
+    if (url.pathname === '/api/agent/proposals' && req.method === 'POST') {
+      return json(res,200,{result:await manager.approve(await readJson(req,16*1024))});
+    }
+    return json(res,404,{error:'Proposal agent API route not found.',code:'proposal_agent_route_not_found'});
+  } catch(error) {
+    if (!error?.statusCode) throw error;
+    return json(res,error.statusCode,{error:error.message,code:error.code||'proposal_agent_request'});
+  }
 }
 
 async function deviceActionsApi(req,res,url,jobManager,runtime) {
