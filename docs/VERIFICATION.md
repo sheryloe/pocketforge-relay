@@ -6,7 +6,47 @@ the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-27
+Latest automated rerun: 2026-08-28
+
+## v0.1.0 pre-release candidate rerun
+
+Tested source commit:
+`26194daa9a2024da5c1962429ecb5dc93eb8bbab`
+
+The commit was cloned with `--no-hardlinks` into a new temporary directory and
+verified without reusing the working tree:
+
+```powershell
+npm ci --ignore-scripts
+npm run check
+npm test
+git diff --check
+```
+
+- Clean dependency installation: PASS (1 package audited, 0 vulnerabilities)
+- Syntax checks: PASS
+- Automated tests: 164 passed, 0 failed
+- Clean checkout status after verification: PASS
+- Focused README/PWA accessibility, lifecycle, and localization contracts:
+  18 passed, 0 failed
+- Actual 390 x 844 browser rerun for this candidate: `NOT RUN`
+- Candidate GitHub Actions CI: `NOT RUN` (candidate branch not published)
+- Candidate PR and merge: `NOT RUN`
+- GitHub repository metadata review: FAIL (the public description begins with
+  `n open`, topics are empty, and homepage is unset)
+
+The clean checkout also ran the server from a stopped state and submitted one
+protocol-v1 bundled-demo job. Health returned 200, an unauthenticated job list
+returned 401, and job `a655709c-f287-40b4-82cb-9616bfab089c` succeeded with
+exit code 0. Every authenticated download returned 200 and its manifest,
+`X-Artifact-SHA256` header, and downloaded-file SHA-256 matched:
+
+- `.pocketforge-result/build-summary.json`:
+  `dd37771b13c6903d62263160fe364c9ce56d92d99a3f963817bf0d494470ff44`
+- `dist/build-report.json`:
+  `ff5e014dcaff61844182ce57ba1865edd36bc8e79e658a6376343dffeda90d80`
+- `dist/index.html`:
+  `2d3b09b6d76d0646a8d0709ace8c3c1fe2a86efa333e83ac9f8d5391fa8a15ac`
 
 ## Environment
 
