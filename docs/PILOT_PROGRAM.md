@@ -10,7 +10,7 @@ complete only when its report contains reproducible results and an explicit
 | Slot | Focus | Entry gate | Current evidence boundary |
 | --- | --- | --- | --- |
 | 1 | Bundled demo through the PWA in the Codex in-app browser or another browser | Release-candidate local checks pass | Shows the web control loop, not physical-phone behavior |
-| 2 | One trusted public Node.js repository | External network clone is exercised safely | External GitHub cloning is currently `NOT RUN` in the recorded environment |
+| 2 | One trusted public Node.js repository | External network clone is exercised safely | Clean commit-pinned `yocto-queue` clone, lockfile install, tests, and artifact digest are recorded as `PASS`; this does not generalize to other repositories |
 | 3 | Android build and device evidence | SDK/JDK build, authorized device installation, launch, logs, and screenshots all pass the readiness gate | Real Android build and physical-device checks are currently `NOT RUN` |
 
 Slot 3 must not be advertised or opened as a working-device pilot until its

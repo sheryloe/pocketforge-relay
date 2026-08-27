@@ -44,9 +44,10 @@ human intent -> AI-assisted proposal -> explicit review -> allowlisted adapter
              -> build or device evidence -> human decision -> iterate
 ```
 
-The current MVP does **not** include an AI-agent adapter. The target is not an
-autonomous agent with an unrestricted shell; it is a human-governed coordination
-layer where future adapters can:
+The current MVP includes a disabled-by-default, provider-neutral proposal
+manager, but no production AI provider adapter. It cannot execute commands or
+write patches. The target is not an autonomous agent with an unrestricted
+shell; it is a human-governed coordination layer where future adapters can:
 
 - triage issues and turn reproducible evidence into a bounded work proposal;
 - classify build and device logs and suggest the next check without silently
@@ -74,12 +75,10 @@ not transmit them by default. The implemented proposal-only core and its current
 
 ## Open-source plan
 
-- **Now:** prove the mobile request-to-artifact loop, contract-tested and
-  disabled-by-default Actions and Android evidence paths, and EN/KO/JA
-  contributor experience.
-- **Next:** validate a trusted external Node.js project, version the adapter
-  protocol, persist events durably, add failure parsers, and introduce a
-  rootless container boundary.
+- **Now:** freeze and verify the first pre-release candidate, keeping every
+  external integration claim tied to dated evidence.
+- **Next:** complete the release checklist, collect bounded pilot reports, and
+  incorporate focused contributor review.
 - **Later:** support agent-assisted repair branches, signed user/device pairing,
   provenance, and policy adapters while retaining explicit human approval for
   install, merge, release, and deploy.
