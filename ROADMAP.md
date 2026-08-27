@@ -69,6 +69,30 @@ opt-in, and approval-gate tests for install, merge, release, and deploy.
 Dates and scope are intentionally evidence-driven. Planned capabilities are not
 represented as implemented until code and verification records exist.
 
+## September 2026 release gates
+
+This weekday plan starts after the ten-day candidate-preparation batch. A day
+closes only when its evidence is recorded as `PASS`, `FAIL`, or `NOT RUN`.
+Failed blocking gates stop publication; they do not trigger unrelated feature
+work.
+
+| Date | Gate | Completion evidence |
+| --- | --- | --- |
+| 2026-09-11 | Publish the reviewed candidate branch | The maintainer explicitly approves the exact public repository destination; the branch is pushed and the remote SHA matches local. |
+| 2026-09-14 | PR and CI | One focused PR contains all candidate commits, Actions concludes successfully for the exact head SHA, review is resolved, the PR is merged, and local `main` is fast-forwarded. |
+| 2026-09-15 | GitHub metadata | The public description begins with `An open`, the documented topics are present, the homepage decision is explicit, and license/issues/settings are re-read through the API. |
+| 2026-09-16 | Remote clean checkout | A new clone of merged `origin/main` passes `npm ci --ignore-scripts`, `npm run check`, 164 tests or the then-current exact count, and clean status. |
+| 2026-09-17 | Candidate mobile review | The Codex in-app browser, not Chrome automation, checks EN/KO/JA at 390 x 844, refresh persistence, overflow, focus, labels, contrast, touch targets, and console output; unavailable checks remain `NOT RUN`. |
+| 2026-09-18 | Evidence reconciliation | Any defect found on September 17 receives a focused fix and regression test; otherwise no code is added. Verification and release checklist statements match executed evidence. |
+| 2026-09-21 | Security release review | Arbitrary-command denial, environment allowlisting, redaction, limits, artifact containment, one-shot approvals, and non-persistent approval secrets are reviewed against tests and public docs. |
+| 2026-09-22 | External integration decision | Decide whether prior live Actions evidence is sufficient for v0.1. Do not dispatch again, connect an AI provider, or access a private repository without a separate explicit approval. |
+| 2026-09-23 | Container boundary decision | Run a real digest-pinned container only if a daemon and reviewed image are available; otherwise record `NOT RUN` without adding fallback code. |
+| 2026-09-24 | Android boundary decision | Run SDK/device checks only with configured tools, an authorized device, and participant consent; otherwise retain every physical-device item as `NOT RUN`. |
+| 2026-09-25 | Contributor surface | Re-read the live issue forms, security route, starter issues, and pilot instructions; record broken links or rendering as `FAIL` and fix only confirmed defects. |
+| 2026-09-28 | Release decision | Audit sections 1-6 of the release checklist and list every exception. Choose release, hold, or reject from evidence; do not create a tag yet. |
+| 2026-09-29 | Approved pre-release | Only after an explicit release approval, create annotated tag `v0.1.0` and the GitHub pre-release from the reviewed notes. Otherwise record `NOT RUN`. |
+| 2026-09-30 | Publication verification | If published, download every release asset, verify its digest, confirm the immutable tag/SHA, close the candidate ledger, and plan the next evidence milestone. |
+
 ## v0.5 - Contributor ecosystem foundation (delivered)
 
 - Bounded bug, pilot, adapter, and good-first-issue forms with private security
