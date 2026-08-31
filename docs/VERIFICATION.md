@@ -6,7 +6,7 @@ the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-28
+Latest automated rerun: 2026-08-31
 
 ## v0.1.0 pre-release candidate rerun
 
@@ -30,10 +30,15 @@ git diff --check
 - Focused README/PWA accessibility, lifecycle, and localization contracts:
   18 passed, 0 failed
 - Actual 390 x 844 browser rerun for this candidate: `NOT RUN`
-- Candidate GitHub Actions CI: `NOT RUN` (candidate branch not published)
-- Candidate PR and merge: `NOT RUN`
-- GitHub repository metadata review: FAIL (the public description begins with
-  `n open`, topics are empty, and homepage is unset)
+- Candidate GitHub Actions CI: PASS
+  ([PR-head run 33344000191](https://github.com/sheryloe/pocketforge-relay/actions/runs/33344000191),
+  [merged-main run 33344072357](https://github.com/sheryloe/pocketforge-relay/actions/runs/33344072357))
+- Candidate PR and merge: PASS
+  ([PR #19](https://github.com/sheryloe/pocketforge-relay/pull/19), merge commit
+  `3f690bd5208b1c8e8f123c11748b0277eb68fd70`)
+- GitHub repository metadata review: PASS after correcting the description,
+  publishing the documented topics, and setting the README homepage. Apache-2.0,
+  public visibility, issues, and `main` as the default branch were re-read.
 
 The clean checkout also ran the server from a stopped state and submitted one
 protocol-v1 bundled-demo job. Health returned 200, an unauthenticated job list
@@ -47,6 +52,34 @@ exit code 0. Every authenticated download returned 200 and its manifest,
   `ff5e014dcaff61844182ce57ba1865edd36bc8e79e658a6376343dffeda90d80`
 - `dist/index.html`:
   `2d3b09b6d76d0646a8d0709ace8c3c1fe2a86efa333e83ac9f8d5391fa8a15ac`
+
+## Merged-main publication verification
+
+The merged GitHub `main` commit
+`3f690bd5208b1c8e8f123c11748b0277eb68fd70` was cloned from the public remote
+into a new directory on 2026-08-31. The clone passed `npm ci --ignore-scripts`
+with 0 reported vulnerabilities, `npm run check`, all 164 tests, `git diff
+--check`, and clean status.
+
+GitHub Actions run
+[33344072357](https://github.com/sheryloe/pocketforge-relay/actions/runs/33344072357)
+also completed successfully for that exact merge SHA after the `main` push.
+
+The clean clone then started the real server and submitted one protocol-v1
+bundled-demo job. Health returned 200, an unauthenticated job list returned 401,
+and job `ae143432-4b5c-4d84-88a7-8928eadac9e8` succeeded with exit code 0.
+Every download returned 200 and its manifest, `X-Artifact-SHA256` header, and
+downloaded-file SHA-256 matched:
+
+- `.pocketforge-result/build-summary.json`:
+  `9e05a1b881edbff0f7d6bdccd321b3b444b6af368fb6b01182d56bd371451a49`
+- `dist/build-report.json`:
+  `d5f5c856061ca6a94b9eae027279104f8add06c6a603bbeab8173e791915d689`
+- `dist/index.html`:
+  `c6bf4b93ed267ccaa4d537003f0c217312c95616d9505076356a893497a21b89`
+
+The candidate browser rerun, release tag, GitHub pre-release, and published
+asset re-download remain `NOT RUN`.
 
 ## Environment
 
