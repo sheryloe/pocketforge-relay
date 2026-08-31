@@ -19,9 +19,9 @@ GitHub pull request, CI, merge, and `main` synchronization all succeed.
 | Gate | Current status | Required evidence |
 | --- | --- | --- |
 | Container daemon integration | `NOT RUN` until a pinned image is selected and available | Recorded image digest, non-root identity, denied network, read-only root, enforced CPU/memory/PID/time limits, build exit code, artifact digest |
-| Live GitHub Actions | `NOT RUN` without an operator allowlist target and credential | Dispatch/run ID, exact ref and resolved commit, terminal conclusion, bounded downloaded evidence digest |
+| Live GitHub Actions | `PASS` for one public allowlisted target at run [32813892748](https://github.com/sheryloe/pocketforge-relay/actions/runs/32813892748); cancellation and private repositories remain `NOT RUN` | Dispatch/run ID, exact ref and resolved commit, terminal conclusion, bounded downloaded evidence digest |
 | Android SDK and physical device | `NOT RUN` without the SDK/JDK/tool paths and an authorized participant device | Build, APK signature, device identity, explicit approval, install/launch/log/screenshot evidence and deletion result |
-| Dependency-based external Node pilot | `NOT RUN` for the current lockfile-free pilot | Trusted repository with committed lockfile, clean checkout, pinned commit, `npm ci --ignore-scripts`, upstream test exit code, artifact digests |
+| Dependency-based external Node pilot | `PASS` for clean commit-pinned `yocto-queue` at `f19848e4f9153fc2bc681a6e0c497898b5ddf237`; other repositories remain unverified | Trusted repository with committed lockfile, clean checkout, pinned commit, `npm ci --ignore-scripts`, upstream test exit code, artifact digests |
 
 ## Delivery order
 

@@ -23,6 +23,20 @@ The accepted result contains only a summary, diagnosis, bounded `inspect`,
 untrusted recommendations. A person must separately review and perform any
 change through the existing bounded build, Actions, Android, and Git workflows.
 
+## Authenticated HTTP contract
+
+When a proposal manager is configured, the bearer-authenticated API exposes:
+
+- `GET /api/agent` for enabled state and the adapter descriptor;
+- `POST /api/agent/previews` with `sourceType`, server-owned `sourceId`, and a
+  fixed `intent`; and
+- `POST /api/agent/proposals` with the preview UUID and exact decision
+  `approve`.
+
+The default server has no provider adapter and returns `503` from proposal
+creation routes. No provider call occurs during preview, and an approval is
+single-use even when the provider fails.
+
 ## Adapter contract
 
 An adapter supplies a lowercase identifier, semantic version, and one method:
@@ -35,6 +49,7 @@ await adapter.propose({ intent, evidence, signal })
 `signal` is aborted on the configured timeout. Calls are bounded, never retried,
 and provider errors are replaced with fixed public errors.
 
-The conformance core and fake-adapter tests are implemented. No production
-OpenAI, Anthropic, or other provider transport is configured, no evidence was
-sent to an external model, and live model output remains `NOT RUN`.
+The conformance core, authenticated HTTP contract, and fake-adapter tests are
+implemented. No production OpenAI, Anthropic, or other provider transport is
+configured, no evidence was sent to an external model, and live model output
+remains `NOT RUN`.

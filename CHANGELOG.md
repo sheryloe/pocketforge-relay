@@ -156,10 +156,11 @@ once releases are published.
 - The Actions and Android core/API/PWA contracts are covered by local automated
   tests, but live GitHub dispatch and real Android execution remain separate
   integration claims.
-- External GitHub cloning, live GitHub Actions dispatch/cancellation/download,
-  a real Android SDK/JDK build, physical-device installation/launch, runtime log
-  or crash capture, and screenshots are `NOT RUN` until each is recorded as
-  `PASS` with dated evidence.
+- External GitHub cloning and one live GitHub Actions dispatch/evidence-download
+  path have dated `PASS` records in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+  Live Actions cancellation and private-repository access remain `NOT RUN`.
+- A real Android SDK/JDK build, physical-device installation/launch, runtime log
+  or crash capture, and screenshots remain `NOT RUN`.
 - The process runner is not a hardened sandbox and is limited to trusted
   repositories and trusted networks.
 
