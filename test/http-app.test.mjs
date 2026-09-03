@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,8 +31,14 @@ test('HTTP API authenticates and accepts demo job', async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
-    assert.equal((await fetch(`${base}/api/health`)).status, 200);
-    assert.equal((await fetch(`${base}/api/jobs`)).status, 401);
+    const health = await fetch(`${base}/api/health`);
+    assert.equal(health.status, 200);
+    assert.equal(health.headers.get('cache-control'), 'no-store');
+    assert.equal(health.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(health.headers.get('x-request-id'), /^[0-9a-f-]{36}$/i);
+    const unauthorized=await fetch(`${base}/api/jobs`);
+    assert.equal(unauthorized.status, 401);
+    assert.equal(unauthorized.headers.get('www-authenticate'),'Bearer realm="PocketForge Relay"');
     const capabilitiesResponse = await fetch(`${base}/api/capabilities`, { headers: { Authorization: 'Bearer test-token' } });
     assert.equal(capabilitiesResponse.status, 200);
     const capabilities = await capabilitiesResponse.json();
@@ -92,6 +99,67 @@ test('HTTP API preserves admission-control status codes', async () => {
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
+});
+
+test('static files support HEAD and reject state-changing methods', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const head=await fetch(url,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');assert.ok(Number(head.headers.get('content-length'))>0);
+    const post=await fetch(url,{method:'POST'});assert.equal(post.status,405);assert.equal(post.headers.get('allow'),'GET, HEAD');
+  } finally { await closeServer(server); }
+});
+
+test('health supports body-free probes', async () => {
+  const server=createPocketForgeServer({config:{publicDir:root,token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try { const response=await fetch(`http://127.0.0.1:${server.address().port}/api/health`,{method:'HEAD'});assert.equal(response.status,200);assert.equal(await response.text(),'');assert.equal(response.headers.get('cache-control'),'no-store'); }
+  finally { await closeServer(server); }
+});
+
+test('health rejects unsupported methods without requesting credentials', async () => {
+  const server=createPocketForgeServer({config:{publicDir:root,token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try { const response=await fetch(`http://127.0.0.1:${server.address().port}/api/health`,{method:'POST'});assert.equal(response.status,405);assert.equal(response.headers.get('allow'),'GET, HEAD');assert.equal(response.headers.get('www-authenticate'),null); }
+  finally { await closeServer(server); }
+});
+
+test('static files use validators for lightweight mobile refreshes', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const first=await fetch(url);const etag=first.headers.get('etag');assert.match(etag,/^"[0-9a-f]+-[0-9a-f]+"$/);
+    const cached=await fetch(url,{headers:{'If-None-Match':etag}});assert.equal(cached.status,304);assert.equal(await cached.text(),'');
+  } finally { await closeServer(server); }
+});
+
+test('JSON endpoints reject an untyped request body', async () => {
+  const manager = { createJob() { throw new Error('must not run'); } };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/jobs`, {
+      method: 'POST', headers: { Authorization: 'Bearer test-token', 'Content-Type': 'text/plain' }, body: '{}',
+    });
+    assert.equal(response.status, 415);
+    assert.deepEqual(await response.json(), { error: 'Content-Type must be application/json.' });
+  } finally { await closeServer(server); }
+});
+
+test('JSON endpoints reject an oversized declared body before reading it', async () => {
+  const manager = { createJob() { throw new Error('must not run'); } };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await rawRequest(server, {
+      method: 'POST', path: '/api/jobs',
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json', 'Content-Length': String(64 * 1024 + 1) },
+    });
+    assert.equal(response.status, 413);
+    assert.match(response.body, /too large/);
+  } finally { await closeServer(server); }
 });
 
 test('HTTP API serves authenticated durable job history', async () => {
@@ -279,4 +347,13 @@ async function within(promise, timeoutMs = 2_000) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function rawRequest(server, options) {
+  return new Promise((resolve, reject) => {
+    const request=http.request({host:'127.0.0.1',port:server.address().port,...options},response=>{
+      const chunks=[];response.on('data',chunk=>chunks.push(chunk));response.on('end',()=>resolve({status:response.statusCode,body:Buffer.concat(chunks).toString('utf8')}));
+    });
+    request.on('error',reject);request.end();
+  });
 }

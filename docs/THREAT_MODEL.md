@@ -87,8 +87,9 @@ restart loses unapproved Android actions and approval secrets; only complete,
 verified terminal evidence is recovered.
 
 On Windows, SDK `.bat` wrappers run through a fixed absolute command processor
-with metacharacter rejection, but timeout termination of the direct wrapper does
-not yet guarantee termination of all Java grandchildren. Real-device `dumpsys`
+with metacharacter rejection, and timeout/cancellation uses a fixed shell-free
+`taskkill /t /f` process-tree request with direct TERM/KILL fallback. Real
+SDK/Java grandchild termination remains unexecuted. Real-device `dumpsys`
 formats also vary by Android/OEM; parsing fails closed, but device fixtures do
 not replace physical-device verification.
 

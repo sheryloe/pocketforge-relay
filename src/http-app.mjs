@@ -1,6 +1,7 @@
 import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { protocolEvent, relayCapabilities, unwrapProtocolRequest } from './adapter-protocol.mjs';
 import { sameFile, sha256Handle } from './artifacts.mjs';
 import { GitHubActionsError } from './github-actions-client.mjs';
@@ -13,17 +14,23 @@ const FINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled']);
 export function createPocketForgeServer({ config, manager, actionsManager = null, deviceActionsRuntime = null, proposalAgentManager = null }) {
   const eventStreamClosers = new Set();
   const server = http.createServer(async (req,res) => {
-    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    res.setHeader('X-Request-ID',randomUUID());
     try {
-      if (url.pathname === '/api/health' && req.method === 'GET') return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()});
-      if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
-      return await staticFile(res,config.publicDir,url.pathname);
-    } catch (e) { if (!res.headersSent) { applySecurityHeaders(res,{api:url.pathname.startsWith('/api/')}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
+      const url = requestUrl(req);
+      if (url.pathname === '/api/health' && (req.method === 'GET'||req.method==='HEAD')) { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()},{head:req.method==='HEAD'}); }
+      if (url.pathname === '/api/health') { applySecurityHeaders(res,{api:true});res.setHeader('Allow','GET, HEAD');return json(res,405,{error:'Method not allowed.'}); }
+      if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) { res.setHeader('WWW-Authenticate','Bearer realm="PocketForge Relay"'); return json(res,401,{error:'Missing or invalid bearer token.'}); } return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
+      return await staticFile(req,res,config.publicDir,url.pathname);
+    } catch (e) { if (!res.headersSent) { const api=String(req.url||'').startsWith('/api/'); applySecurityHeaders(res,{api}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
   });
   server.closeEventStreams = () => {
     for (const closeStream of [...eventStreamClosers]) closeStream();
   };
   return server;
+}
+function requestUrl(req) {
+  try { return new URL(req.url || '/', 'http://localhost'); }
+  catch { throw fileResponseError(400,'Request target is malformed.'); }
 }
 async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers) {
   if (url.pathname === '/api/actions/targets' || url.pathname.startsWith('/api/actions/')) return actionsApi(req,res,url,actionsManager);
@@ -205,8 +212,13 @@ function streamJobEvents(req,res,manager,jobId,eventStreamClosers) {
   heartbeat=setInterval(()=>{if(!res.destroyed&&!res.writableEnded)res.write(': heartbeat\n\n');},15000);
   eventStreamClosers.add(closeStream); req.once('close',closeStream);
 }
-async function staticFile(res,dir,requestPath) { const p=safeStaticPath(dir,requestPath); if(!p){applySecurityHeaders(res);return text(res,400,'Bad request.');} applySecurityHeaders(res); const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;} }
-async function sendFile(res,filePath,headers,{sha256}={}) {
+async function staticFile(req,res,dir,requestPath) {
+  applySecurityHeaders(res);
+  if(req.method!=='GET'&&req.method!=='HEAD'){res.setHeader('Allow','GET, HEAD');return text(res,405,'Method not allowed.');}
+  const p=safeStaticPath(dir,requestPath);if(!p)return text(res,400,'Bad request.');
+  const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'},{head:req.method==='HEAD',ifNoneMatch:req.headers['if-none-match']});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;}
+}
+async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={}) {
   let before;
   try { before=await fsp.lstat(filePath); }
   catch(error) { if(error?.code==='ENOENT')throw fileResponseError(404,'File not found.'); throw error; }
@@ -222,7 +234,10 @@ async function sendFile(res,filePath,headers,{sha256}={}) {
       const actual=await sha256Handle(handle);const verified=await handle.stat();
       if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
     }
-    res.writeHead(200,{...headers,'Content-Length':opened.size});
+    const etag=`"${opened.size.toString(16)}-${Math.trunc(opened.mtimeMs).toString(16)}"`;
+    if(ifNoneMatch===etag){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
+    res.writeHead(200,{...headers,ETag:etag,'Content-Length':opened.size});
+    if(head){res.end();return;}
     const stream=handle.createReadStream({autoClose:true,start:0});
     handedOff=true;
     await new Promise((resolve,reject)=>{
@@ -237,7 +252,13 @@ async function sendFile(res,filePath,headers,{sha256}={}) {
   } finally { if(!handedOff)await handle.close().catch(()=>{}); }
 }
 function fileResponseError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
-async function readJson(req,max){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}}
+async function readJson(req,max){
+  const contentType=String(req.headers['content-type']||'').split(';',1)[0].trim().toLowerCase();
+  if(contentType!=='application/json'){const e=new Error('Content-Type must be application/json.');e.statusCode=415;throw e;}
+  const declared=Number(req.headers['content-length']);
+  if(Number.isFinite(declared)&&declared>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}
+  const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}
+}
 function event(res,name,payload){if(res.destroyed||res.writableEnded)return;res.write(`event: ${name}\n`);res.write(`data: ${JSON.stringify(protocolEvent(payload))}\n\n`);}
-function json(res,status,payload){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}
+function json(res,status,payload,{head=false}={}){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(head?undefined:body);}
 function text(res,status,body){res.writeHead(status,{'Content-Type':'text/plain; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}
