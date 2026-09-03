@@ -114,7 +114,10 @@ export function terminateProcessTree(child, environment = process.env, { platfor
     && typeof systemRoot === 'string' && path.win32.isAbsolute(systemRoot)) {
     try {
       const killer = spawnImpl(path.win32.join(systemRoot, 'System32', 'taskkill.exe'), ['/pid', String(child.pid), '/t', '/f'], { shell: false, windowsHide: true, stdio: 'ignore' });
-      killer.on?.('error', () => terminateDirectChild(child));
+      let fellBack = false;
+      const fallback = () => { if (!fellBack) { fellBack = true; terminateDirectChild(child); } };
+      killer.on?.('error', fallback);
+      killer.on?.('exit', code => { if (code !== 0) fallback(); });
       killer.unref?.();
       return undefined;
     } catch { return terminateDirectChild(child); }

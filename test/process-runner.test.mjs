@@ -92,3 +92,13 @@ test('Windows termination requests a fixed taskkill process tree without a shell
   assert.deepEqual(calls[0][2], { shell: false, windowsHide: true, stdio: 'ignore' });
   assert.deepEqual(calls.slice(1), [['unref']]);
 });
+
+test('Windows termination falls back when taskkill cannot terminate the tree', () => {
+  const signals = [];
+  const child = { pid: 42, exitCode: null, signalCode: null, kill: signal => signals.push(signal) };
+  const killer = new EventEmitter();
+  killer.unref = () => {};
+  terminateProcessTree(child, { SystemRoot: 'C:\\Windows' }, { platform: 'win32', spawnImpl: () => killer });
+  killer.emit('exit', 1);
+  assert.deepEqual(signals, ['SIGTERM']);
+});
