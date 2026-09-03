@@ -53,3 +53,8 @@ The conformance core, authenticated HTTP contract, and fake-adapter tests are
 implemented. No production OpenAI, Anthropic, or other provider transport is
 configured, no evidence was sent to an external model, and live model output
 remains `NOT RUN`.
+
+The mobile PWA exposes the same two-step contract in English, Korean, and
+Japanese. It sends only a selected relay-owned source UUID and fixed intent to
+create the preview, requires a checked disclosure consent before approval, and
+renders accepted output with text-only DOM operations.

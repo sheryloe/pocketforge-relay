@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-03 - Human-governed proposal UI
+
+- Add an EN/KO/JA mobile flow for selecting relay-owned evidence, reviewing the
+  exact bounded disclosure, explicitly consenting, and rendering structured
+  non-executable advice without HTML injection.
+
 ## 2026-08-26 - Actions evidence finalization
 
 - Keep completed remote runs in `collecting_evidence` until required logs and

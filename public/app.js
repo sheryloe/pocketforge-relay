@@ -62,6 +62,7 @@ const state = {
     refreshTimer: null,
     refreshing: false,
   },
+  agent: { available: false, enabled: false, preview: null, result: null, refreshing: false },
 };
 
 const messageRegistry = new Map();
@@ -162,6 +163,10 @@ const E = {
   actionConsole: $('#actionLogConsole'),
   actionCount: $('#actionArtifactCount'),
   actionArtifacts: $('#actionArtifactsList'),
+  agentState: $('#agentState'), agentForm: $('#agentForm'), agentSource: $('#agentSourceSelect'), agentIntent: $('#agentIntentSelect'),
+  agentReview: $('#agentReviewButton'), agentMessage: $('#agentMessage'), agentPreview: $('#agentPreview'), agentEvidence: $('#agentEvidence'),
+  agentConsent: $('#agentConsent'), agentApprove: $('#agentApproveButton'), agentDiscard: $('#agentDiscardButton'), agentResult: $('#agentResult'),
+  agentSummary: $('#agentSummary'), agentDiagnosis: $('#agentDiagnosis'), agentSteps: $('#agentSteps'), agentRisks: $('#agentRisks'), agentVerification: $('#agentVerification'),
 };
 
 boot();
@@ -239,6 +244,12 @@ function bind() {
   E.actionDiscard.onclick = () => discardActionApproval('message.actionsReviewDiscarded');
   E.actionRefresh.onclick = () => refreshActionRuns();
   E.actionCancel.onclick = cancelActionRun;
+  E.agentSource.onchange = discardAgentPreview;
+  E.agentIntent.onchange = discardAgentPreview;
+  E.agentForm.onsubmit = reviewAgentEvidence;
+  E.agentConsent.onchange = updateAgentControls;
+  E.agentApprove.onclick = approveAgentProposal;
+  E.agentDiscard.onclick = discardAgentPreview;
 }
 
 async function connect() {
@@ -257,6 +268,7 @@ async function connect() {
     renderJobs();
     msgKey(E.connection, 'message.connected', 'success');
     await Promise.all([loadActions(), loadDevices()]);
+    await loadAgent();
     if (state.jobs[0] && !state.active) await select(state.jobs[0].id);
   } catch (error) {
     E.launch.disabled = true;
@@ -264,6 +276,7 @@ async function connect() {
     state.token = '';
     resetActions('connect_first', 'message.connectForActions');
     resetDevices('connect_first', 'message.deviceConnect');
+    resetAgent('connect_first', 'message.connectForAgent');
     msgRaw(E.connection, error.message, 'error');
   } finally {
     E.connect.disabled = false;
@@ -317,6 +330,7 @@ async function refresh() {
   state.jobs = mergeJobs(live.jobs, history.jobs);
   renderJobs();
   populateDeviceJobs();
+  populateAgentSources();
 }
 
 function mergeJobs(liveJobs = [], durableJobs = []) {
@@ -1205,6 +1219,7 @@ async function refreshActionRuns({ selectFirst = false, silent = false } = {}) {
   try {
     const payload = await api('/api/actions/runs');
     state.actions.runs = Array.isArray(payload.runs) ? payload.runs : [];
+    populateAgentSources();
     const activeId = state.actions.active?.id;
     renderActionRuns();
     if (activeId) {
@@ -1353,6 +1368,116 @@ async function downloadActionArtifact(id, artifact) {
     msgRaw(E.actionMessage, error.message, 'error');
   }
 }
+
+async function loadAgent() {
+  try {
+    const payload = await api('/api/agent');
+    state.agent.available = true;
+    state.agent.enabled = Boolean(payload.enabled);
+    setBadge(E.agentState, state.agent.enabled ? 'ready' : 'disabled');
+    populateAgentSources();
+    msgKey(E.agentMessage, state.agent.enabled ? 'message.agentChoose' : 'message.agentDisabled');
+  } catch (error) {
+    resetAgent('unavailable', 'message.agentUnavailable', { error: error.message });
+  }
+}
+
+function resetAgent(status, messageKey, params = {}) {
+  Object.assign(state.agent, { available: false, enabled: false, preview: null, result: null, refreshing: false });
+  setBadge(E.agentState, status);
+  E.agentPreview.hidden = true;
+  E.agentResult.hidden = true;
+  populateAgentSources();
+  msgKey(E.agentMessage, messageKey, '', params);
+}
+
+function agentSources() {
+  const jobs = state.jobs.map(job => ({ value: `local_job:${job.id}`, label: `${t('agent.localJob')} · ${job.label || short(job.id)}` }));
+  const runs = state.actions.runs.map(run => ({ value: `actions_run:${run.id}`, label: `${t('agent.actionsRun')} · ${run.label || short(run.id)}` }));
+  return [...jobs, ...runs];
+}
+
+function populateAgentSources() {
+  const selected = E.agentSource.value;
+  const sources = agentSources();
+  if (!state.agent.enabled || !sources.length) {
+    E.agentSource.replaceChildren(option('', state.agent.enabled ? t('agent.sourceEmpty') : t('agent.sourceConnect')));
+  } else {
+    E.agentSource.replaceChildren(...sources.map(source => option(source.value, source.label)));
+    if (sources.some(source => source.value === selected)) E.agentSource.value = selected;
+  }
+  E.agentSource.disabled = !state.agent.enabled || !sources.length;
+  E.agentIntent.disabled = !state.agent.enabled;
+  updateAgentControls();
+}
+
+function updateAgentControls() {
+  const hasSource = state.agent.enabled && E.agentSource.value.includes(':');
+  E.agentForm.setAttribute('aria-busy', String(state.agent.refreshing));
+  E.agentReview.disabled = !hasSource || state.agent.refreshing || Boolean(state.agent.preview);
+  E.agentApprove.disabled = !state.agent.preview || !E.agentConsent.checked || state.agent.refreshing;
+  E.agentDiscard.disabled = !state.agent.preview || state.agent.refreshing;
+}
+
+function discardAgentPreview() {
+  state.agent.preview = null;
+  E.agentPreview.hidden = true;
+  E.agentConsent.checked = false;
+  updateAgentControls();
+}
+
+async function reviewAgentEvidence(event) {
+  event.preventDefault();
+  const [sourceType, sourceId] = E.agentSource.value.split(':');
+  if (!sourceType || !sourceId) return msgKey(E.agentMessage, 'message.agentSourceRequired', 'error');
+  state.agent.refreshing = true;
+  updateAgentControls();
+  try {
+    const payload = await api('/api/agent/previews', { method: 'POST', body: JSON.stringify({ sourceType, sourceId, intent: E.agentIntent.value }) });
+    state.agent.preview = payload.preview;
+    renderAgentPreview();
+    msgKey(E.agentMessage, 'message.agentPreviewReady', 'success');
+    E.agentPreview.focus({ preventScroll: true });
+  } catch (error) { msgRaw(E.agentMessage, error.message, 'error'); }
+  finally { state.agent.refreshing = false; updateAgentControls(); }
+}
+
+function renderAgentPreview() {
+  if (!state.agent.preview) return;
+  E.agentEvidence.textContent = JSON.stringify(state.agent.preview.evidence, null, 2);
+  E.agentPreview.hidden = false;
+}
+
+async function approveAgentProposal() {
+  if (!state.agent.preview || !E.agentConsent.checked) return;
+  const previewId = state.agent.preview.id;
+  state.agent.refreshing = true;
+  updateAgentControls();
+  msgKey(E.agentMessage, 'message.agentGenerating');
+  try {
+    const payload = await api('/api/agent/proposals', { method: 'POST', body: JSON.stringify({ previewId, decision: 'approve' }) });
+    state.agent.result = payload.result;
+    discardAgentPreview();
+    renderAgentResult();
+    msgKey(E.agentMessage, 'message.agentGenerated', 'success');
+  } catch (error) {
+    discardAgentPreview();
+    msgRaw(E.agentMessage, error.message, 'error');
+  } finally { state.agent.refreshing = false; updateAgentControls(); }
+}
+
+function renderAgentResult() {
+  const proposal = state.agent.result?.proposal;
+  E.agentResult.hidden = !proposal;
+  if (!proposal) return;
+  E.agentSummary.textContent = proposal.summary;
+  E.agentDiagnosis.textContent = proposal.diagnosis;
+  E.agentSteps.replaceChildren(...proposal.steps.map(step => listItem(`${step.kind}${step.path ? ` · ${step.path}` : ''}: ${step.description}`)));
+  E.agentRisks.replaceChildren(...proposal.risks.map(listItem));
+  E.agentVerification.replaceChildren(...proposal.verification.map(listItem));
+}
+
+function listItem(text) { const item = document.createElement('li'); item.textContent = text; return item; }
 
 function scheduleActionRefresh() {
   clearTimeout(state.actions.refreshTimer);
@@ -1574,6 +1699,9 @@ function applyLocale() {
   renderActionRuns();
   if (state.actions.active) renderActionRun();
   if (state.actions.approval) renderActionApproval(state.actions.approval);
+  populateAgentSources();
+  if (state.agent.preview) renderAgentPreview();
+  if (state.agent.result) renderAgentResult();
 }
 
 function t(key, params = {}) {
