@@ -13,17 +13,21 @@ const FINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled']);
 export function createPocketForgeServer({ config, manager, actionsManager = null, deviceActionsRuntime = null, proposalAgentManager = null }) {
   const eventStreamClosers = new Set();
   const server = http.createServer(async (req,res) => {
-    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     try {
-      if (url.pathname === '/api/health' && req.method === 'GET') return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()});
+      const url = requestUrl(req);
+      if (url.pathname === '/api/health' && req.method === 'GET') { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()}); }
       if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
       return await staticFile(res,config.publicDir,url.pathname);
-    } catch (e) { if (!res.headersSent) { applySecurityHeaders(res,{api:url.pathname.startsWith('/api/')}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
+    } catch (e) { if (!res.headersSent) { const api=String(req.url||'').startsWith('/api/'); applySecurityHeaders(res,{api}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
   });
   server.closeEventStreams = () => {
     for (const closeStream of [...eventStreamClosers]) closeStream();
   };
   return server;
+}
+function requestUrl(req) {
+  try { return new URL(req.url || '/', 'http://localhost'); }
+  catch { throw fileResponseError(400,'Request target is malformed.'); }
 }
 async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers) {
   if (url.pathname === '/api/actions/targets' || url.pathname.startsWith('/api/actions/')) return actionsApi(req,res,url,actionsManager);

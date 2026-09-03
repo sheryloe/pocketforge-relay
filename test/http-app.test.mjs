@@ -30,7 +30,10 @@ test('HTTP API authenticates and accepts demo job', async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
-    assert.equal((await fetch(`${base}/api/health`)).status, 200);
+    const health = await fetch(`${base}/api/health`);
+    assert.equal(health.status, 200);
+    assert.equal(health.headers.get('cache-control'), 'no-store');
+    assert.equal(health.headers.get('x-content-type-options'), 'nosniff');
     assert.equal((await fetch(`${base}/api/jobs`)).status, 401);
     const capabilitiesResponse = await fetch(`${base}/api/capabilities`, { headers: { Authorization: 'Bearer test-token' } });
     assert.equal(capabilitiesResponse.status, 200);
