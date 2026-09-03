@@ -35,6 +35,7 @@ test('HTTP API authenticates and accepts demo job', async () => {
     assert.equal(health.status, 200);
     assert.equal(health.headers.get('cache-control'), 'no-store');
     assert.equal(health.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(health.headers.get('x-request-id'), /^[0-9a-f-]{36}$/i);
     assert.equal((await fetch(`${base}/api/jobs`)).status, 401);
     const capabilitiesResponse = await fetch(`${base}/api/capabilities`, { headers: { Authorization: 'Bearer test-token' } });
     assert.equal(capabilitiesResponse.status, 200);

@@ -1,6 +1,7 @@
 import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { protocolEvent, relayCapabilities, unwrapProtocolRequest } from './adapter-protocol.mjs';
 import { sameFile, sha256Handle } from './artifacts.mjs';
 import { GitHubActionsError } from './github-actions-client.mjs';
@@ -13,6 +14,7 @@ const FINAL_JOB_STATUSES = new Set(['succeeded', 'failed', 'cancelled']);
 export function createPocketForgeServer({ config, manager, actionsManager = null, deviceActionsRuntime = null, proposalAgentManager = null }) {
   const eventStreamClosers = new Set();
   const server = http.createServer(async (req,res) => {
+    res.setHeader('X-Request-ID',randomUUID());
     try {
       const url = requestUrl(req);
       if (url.pathname === '/api/health' && req.method === 'GET') { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()}); }
