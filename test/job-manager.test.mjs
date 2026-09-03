@@ -14,6 +14,12 @@ test('job creation rejects fields outside the public contract', async () => {
   await manager.shutdown();
 });
 
+test('demo jobs reject ignored repository controls', async () => {
+  const manager=new JobManager(makeConfig());
+  assert.throws(()=>manager.createJob({sourceType:'demo',presetId:'demo-web',repository:'https://github.com/example/example'}),error=>error.statusCode===400&&/Demo jobs/.test(error.message));
+  await manager.shutdown();
+});
+
 test('bundled demo completes workspace-to-artifact loop with redacted logs', async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-jobs-'));
   const manager = new JobManager(makeConfig({ dataDir }));

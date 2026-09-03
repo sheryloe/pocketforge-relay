@@ -42,6 +42,7 @@ export class JobManager {
     }
     const sourceType = input.sourceType === 'github' ? 'github' : input.sourceType === 'demo' ? 'demo' : null;
     if (!sourceType) throw new Error('sourceType must be either demo or github.');
+    if(sourceType==='demo'&&(Object.hasOwn(input,'repository')||Object.hasOwn(input,'ref'))) throw statusError('Demo jobs cannot include repository or ref.',400);
     const preset = getPreset(String(input.presetId || ''));
     assertPresetSupportsSource(preset, sourceType);
     const job = {
