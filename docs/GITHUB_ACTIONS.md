@@ -30,7 +30,9 @@ Implemented core:
   observation shutdown;
 - authenticated target, approval, dispatch, status, cancellation, and artifact
   download routes whose public representations omit credentials and absolute
-  filesystem paths.
+  filesystem paths;
+- explicit terminal-run deletion that removes the owned workspace and durable
+  event history together after confirmation.
 
 Still not integrated:
 
