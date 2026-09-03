@@ -215,9 +215,9 @@ async function staticFile(req,res,dir,requestPath) {
   applySecurityHeaders(res);
   if(req.method!=='GET'&&req.method!=='HEAD'){res.setHeader('Allow','GET, HEAD');return text(res,405,'Method not allowed.');}
   const p=safeStaticPath(dir,requestPath);if(!p)return text(res,400,'Bad request.');
-  const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'},{head:req.method==='HEAD'});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;}
+  const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'},{head:req.method==='HEAD',ifNoneMatch:req.headers['if-none-match']});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;}
 }
-async function sendFile(res,filePath,headers,{sha256,head=false}={}) {
+async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={}) {
   let before;
   try { before=await fsp.lstat(filePath); }
   catch(error) { if(error?.code==='ENOENT')throw fileResponseError(404,'File not found.'); throw error; }
@@ -233,7 +233,9 @@ async function sendFile(res,filePath,headers,{sha256,head=false}={}) {
       const actual=await sha256Handle(handle);const verified=await handle.stat();
       if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
     }
-    res.writeHead(200,{...headers,'Content-Length':opened.size});
+    const etag=`"${opened.size.toString(16)}-${Math.trunc(opened.mtimeMs).toString(16)}"`;
+    if(ifNoneMatch===etag){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
+    res.writeHead(200,{...headers,ETag:etag,'Content-Length':opened.size});
     if(head){res.end();return;}
     const stream=handle.createReadStream({autoClose:true,start:0});
     handedOff=true;

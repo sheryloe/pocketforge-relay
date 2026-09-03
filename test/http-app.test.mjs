@@ -109,6 +109,16 @@ test('static files support HEAD and reject state-changing methods', async () => 
   } finally { await closeServer(server); }
 });
 
+test('static files use validators for lightweight mobile refreshes', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const first=await fetch(url);const etag=first.headers.get('etag');assert.match(etag,/^"[0-9a-f]+-[0-9a-f]+"$/);
+    const cached=await fetch(url,{headers:{'If-None-Match':etag}});assert.equal(cached.status,304);assert.equal(await cached.text(),'');
+  } finally { await closeServer(server); }
+});
+
 test('JSON endpoints reject an untyped request body', async () => {
   const manager = { createJob() { throw new Error('must not run'); } };
   const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
