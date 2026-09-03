@@ -17,7 +17,7 @@ export function createPocketForgeServer({ config, manager, actionsManager = null
       const url = requestUrl(req);
       if (url.pathname === '/api/health' && req.method === 'GET') { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()}); }
       if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
-      return await staticFile(res,config.publicDir,url.pathname);
+      return await staticFile(req,res,config.publicDir,url.pathname);
     } catch (e) { if (!res.headersSent) { const api=String(req.url||'').startsWith('/api/'); applySecurityHeaders(res,{api}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
   });
   server.closeEventStreams = () => {
@@ -209,8 +209,13 @@ function streamJobEvents(req,res,manager,jobId,eventStreamClosers) {
   heartbeat=setInterval(()=>{if(!res.destroyed&&!res.writableEnded)res.write(': heartbeat\n\n');},15000);
   eventStreamClosers.add(closeStream); req.once('close',closeStream);
 }
-async function staticFile(res,dir,requestPath) { const p=safeStaticPath(dir,requestPath); if(!p){applySecurityHeaders(res);return text(res,400,'Bad request.');} applySecurityHeaders(res); const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;} }
-async function sendFile(res,filePath,headers,{sha256}={}) {
+async function staticFile(req,res,dir,requestPath) {
+  applySecurityHeaders(res);
+  if(req.method!=='GET'&&req.method!=='HEAD'){res.setHeader('Allow','GET, HEAD');return text(res,405,'Method not allowed.');}
+  const p=safeStaticPath(dir,requestPath);if(!p)return text(res,400,'Bad request.');
+  const ext=path.extname(p).toLowerCase();try{return await sendFile(res,p,{'Content-Type':MIME.get(ext)||'application/octet-stream','Cache-Control':ext==='.html'?'no-cache':'public, max-age=300'},{head:req.method==='HEAD'});}catch(error){if(!res.headersSent&&error?.statusCode===404)return text(res,404,'Not found.');throw error;}
+}
+async function sendFile(res,filePath,headers,{sha256,head=false}={}) {
   let before;
   try { before=await fsp.lstat(filePath); }
   catch(error) { if(error?.code==='ENOENT')throw fileResponseError(404,'File not found.'); throw error; }
@@ -227,6 +232,7 @@ async function sendFile(res,filePath,headers,{sha256}={}) {
       if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
     }
     res.writeHead(200,{...headers,'Content-Length':opened.size});
+    if(head){res.end();return;}
     const stream=handle.createReadStream({autoClose:true,start:0});
     handedOff=true;
     await new Promise((resolve,reject)=>{

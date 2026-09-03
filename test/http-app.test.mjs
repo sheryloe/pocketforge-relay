@@ -98,6 +98,16 @@ test('HTTP API preserves admission-control status codes', async () => {
   }
 });
 
+test('static files support HEAD and reject state-changing methods', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const head=await fetch(url,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');assert.ok(Number(head.headers.get('content-length'))>0);
+    const post=await fetch(url,{method:'POST'});assert.equal(post.status,405);assert.equal(post.headers.get('allow'),'GET, HEAD');
+  } finally { await closeServer(server); }
+});
+
 test('JSON endpoints reject an untyped request body', async () => {
   const manager = { createJob() { throw new Error('must not run'); } };
   const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
