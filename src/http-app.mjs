@@ -17,7 +17,7 @@ export function createPocketForgeServer({ config, manager, actionsManager = null
     res.setHeader('X-Request-ID',randomUUID());
     try {
       const url = requestUrl(req);
-      if (url.pathname === '/api/health' && req.method === 'GET') { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()}); }
+      if (url.pathname === '/api/health' && (req.method === 'GET'||req.method==='HEAD')) { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()},{head:req.method==='HEAD'}); }
       if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) return json(res,401,{error:'Missing or invalid bearer token.'}); return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
       return await staticFile(req,res,config.publicDir,url.pathname);
     } catch (e) { if (!res.headersSent) { const api=String(req.url||'').startsWith('/api/'); applySecurityHeaders(res,{api}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }
@@ -259,5 +259,5 @@ async function readJson(req,max){
   const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}
 }
 function event(res,name,payload){if(res.destroyed||res.writableEnded)return;res.write(`event: ${name}\n`);res.write(`data: ${JSON.stringify(protocolEvent(payload))}\n\n`);}
-function json(res,status,payload){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}
+function json(res,status,payload,{head=false}={}){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(head?undefined:body);}
 function text(res,status,body){res.writeHead(status,{'Content-Type':'text/plain; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}

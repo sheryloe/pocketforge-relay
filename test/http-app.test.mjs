@@ -109,6 +109,13 @@ test('static files support HEAD and reject state-changing methods', async () => 
   } finally { await closeServer(server); }
 });
 
+test('health supports body-free probes', async () => {
+  const server=createPocketForgeServer({config:{publicDir:root,token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try { const response=await fetch(`http://127.0.0.1:${server.address().port}/api/health`,{method:'HEAD'});assert.equal(response.status,200);assert.equal(await response.text(),'');assert.equal(response.headers.get('cache-control'),'no-store'); }
+  finally { await closeServer(server); }
+});
+
 test('static files use validators for lightweight mobile refreshes', async () => {
   const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
