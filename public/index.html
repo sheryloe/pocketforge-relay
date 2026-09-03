@@ -204,6 +204,30 @@
       </div>
     </div>
   </section>
+  <section id="agentSection" class="panel actions-panel" aria-labelledby="agentHeading">
+    <div class="heading"><div><small data-i18n="agent.step">07 · PROPOSE</small><h2 id="agentHeading" data-i18n="agent.title">AI repair proposal</h2></div><em id="agentState" class="status neutral" data-i18n="status.connect_first">connect first</em></div>
+    <p class="section-intro" data-i18n="agent.intro">Review the exact bounded evidence before explicitly allowing a configured provider to generate non-executable advice.</p>
+    <div class="actions-layout">
+      <form id="agentForm" class="actions-controls">
+        <div class="step-label"><b data-i18n="agent.stepOne">Step 1 of 2</b><span data-i18n="agent.stepOneHelp">Choose relay-owned evidence and an allowed intent.</span></div>
+        <label for="agentSourceSelect" data-i18n-prefix="agent.source">Evidence source<select id="agentSourceSelect" disabled><option value="" data-i18n="agent.sourceConnect">Connect to load evidence.</option></select></label>
+        <label for="agentIntentSelect" data-i18n-prefix="agent.intent">Proposal intent<select id="agentIntentSelect" disabled><option value="explain_failure" data-i18n="agent.intentExplain">Explain failure</option><option value="repair_plan" data-i18n="agent.intentRepair">Repair plan</option><option value="verification_plan" data-i18n="agent.intentVerify">Verification plan</option></select></label>
+        <button id="agentReviewButton" type="submit" class="secondary secondary-wide" disabled data-i18n="agent.review">Review evidence disclosure</button>
+        <p id="agentMessage" class="message" aria-live="polite"></p>
+        <section id="agentPreview" class="approval-preview" aria-labelledby="agentPreviewHeading" tabindex="-1" hidden>
+          <div class="step-label"><b id="agentPreviewHeading" data-i18n="agent.stepTwo">Step 2 of 2</b><span data-i18n="agent.stepTwoHelp">Only the evidence shown below will be sent.</span></div>
+          <pre id="agentEvidence" class="evidence-preview"></pre>
+          <label class="consent-row"><input id="agentConsent" type="checkbox"><span data-i18n="agent.consent">I approve sending this displayed evidence to the configured proposal provider.</span></label>
+          <div class="approval-actions"><button id="agentApproveButton" type="button" class="primary" disabled data-i18n="agent.approve">Approve and generate proposal</button><button id="agentDiscardButton" type="button" class="secondary" data-i18n="agent.discard">Discard preview</button></div>
+        </section>
+      </form>
+      <section id="agentResult" class="action-run-detail" aria-labelledby="agentResultHeading" hidden>
+        <div class="heading compact-heading"><div><small data-i18n="agent.resultLabel">PROPOSAL</small><h3 id="agentResultHeading" data-i18n="agent.resultTitle">Structured advice</h3></div><em data-i18n="agent.nonExecutable">non-executable</em></div>
+        <h4 data-i18n="agent.summary">Summary</h4><p id="agentSummary"></p><h4 data-i18n="agent.diagnosis">Diagnosis</h4><p id="agentDiagnosis"></p>
+        <h4 data-i18n="agent.steps">Suggested steps</h4><ol id="agentSteps"></ol><h4 data-i18n="agent.risks">Risks</h4><ul id="agentRisks"></ul><h4 data-i18n="agent.verification">Verification</h4><ul id="agentVerification"></ul>
+      </section>
+    </div>
+  </section>
   <aside><strong data-i18n="boundary.title">MVP boundary</strong><span data-i18n="boundary.body">This release proves the mobile orchestration spine. It is not yet a hardened container sandbox. Run trusted public repositories only.</span></aside>
 </main>
 <footer><span data-i18n="footer.license">PocketForge Relay · Apache-2.0</span><span data-i18n="footer.tagline">The phone commands the loop. Compute happens where it belongs.</span></footer>
