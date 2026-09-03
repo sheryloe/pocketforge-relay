@@ -18,6 +18,7 @@ export function createPocketForgeServer({ config, manager, actionsManager = null
     try {
       const url = requestUrl(req);
       if (url.pathname === '/api/health' && (req.method === 'GET'||req.method==='HEAD')) { applySecurityHeaders(res,{api:true}); return json(res,200,{ok:true,name:'PocketForge Relay',version:'0.1.0',time:new Date().toISOString()},{head:req.method==='HEAD'}); }
+      if (url.pathname === '/api/health') { applySecurityHeaders(res,{api:true});res.setHeader('Allow','GET, HEAD');return json(res,405,{error:'Method not allowed.'}); }
       if (url.pathname.startsWith('/api/')) { applySecurityHeaders(res,{api:true}); if (!tokenMatches(config.token, req.headers.authorization)) { res.setHeader('WWW-Authenticate','Bearer realm="PocketForge Relay"'); return json(res,401,{error:'Missing or invalid bearer token.'}); } return await api(req,res,url,manager,actionsManager,deviceActionsRuntime,proposalAgentManager,eventStreamClosers); }
       return await staticFile(req,res,config.publicDir,url.pathname);
     } catch (e) { if (!res.headersSent) { const api=String(req.url||'').startsWith('/api/'); applySecurityHeaders(res,{api}); return json(res,e.statusCode||500,{error:e.statusCode?e.message:'Internal server error.'}); } res.end(); }

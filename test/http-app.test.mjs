@@ -118,6 +118,13 @@ test('health supports body-free probes', async () => {
   finally { await closeServer(server); }
 });
 
+test('health rejects unsupported methods without requesting credentials', async () => {
+  const server=createPocketForgeServer({config:{publicDir:root,token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try { const response=await fetch(`http://127.0.0.1:${server.address().port}/api/health`,{method:'POST'});assert.equal(response.status,405);assert.equal(response.headers.get('allow'),'GET, HEAD');assert.equal(response.headers.get('www-authenticate'),null); }
+  finally { await closeServer(server); }
+});
+
 test('static files use validators for lightweight mobile refreshes', async () => {
   const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
