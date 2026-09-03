@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -107,6 +108,20 @@ test('JSON endpoints reject an untyped request body', async () => {
     });
     assert.equal(response.status, 415);
     assert.deepEqual(await response.json(), { error: 'Content-Type must be application/json.' });
+  } finally { await closeServer(server); }
+});
+
+test('JSON endpoints reject an oversized declared body before reading it', async () => {
+  const manager = { createJob() { throw new Error('must not run'); } };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await rawRequest(server, {
+      method: 'POST', path: '/api/jobs',
+      headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json', 'Content-Length': String(64 * 1024 + 1) },
+    });
+    assert.equal(response.status, 413);
+    assert.match(response.body, /too large/);
   } finally { await closeServer(server); }
 });
 
@@ -295,4 +310,13 @@ async function within(promise, timeoutMs = 2_000) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function rawRequest(server, options) {
+  return new Promise((resolve, reject) => {
+    const request=http.request({host:'127.0.0.1',port:server.address().port,...options},response=>{
+      const chunks=[];response.on('data',chunk=>chunks.push(chunk));response.on('end',()=>resolve({status:response.statusCode,body:Buffer.concat(chunks).toString('utf8')}));
+    });
+    request.on('error',reject);request.end();
+  });
 }
