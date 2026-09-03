@@ -72,6 +72,9 @@ logs, and retained artifact metadata are restart-readable. A durable
 non-terminal run is finalized as `needs_attention` after restart without remote
 redispatch or process resumption. Shutdown aborts and waits for observation but
 does not claim an already-dispatched workflow was remotely cancelled.
+Terminal Actions data is deleted only through an explicit authenticated request;
+the fixed UUID workspace is quarantined beneath its owned root before recursive
+removal, then the matching durable event log is deleted.
 
 The optional device-action runtime is also disabled by default. It resolves a
 succeeded job and APK artifact by server-issued identifiers, snapshots that APK

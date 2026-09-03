@@ -5,6 +5,8 @@
 - Add an EN/KO/JA mobile flow for selecting relay-owned evidence, reviewing the
   exact bounded disclosure, explicitly consenting, and rendering structured
   non-executable advice without HTML injection.
+- Add explicit terminal-only Actions deletion that removes the owned workspace
+  and durable event history together, with an EN/KO/JA irreversible-confirmation UI.
 
 ## 2026-08-26 - Actions evidence finalization
 

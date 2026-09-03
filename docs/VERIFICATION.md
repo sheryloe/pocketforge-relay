@@ -97,7 +97,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 167 passed, 0 failed
+- Automated tests: 169 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -145,6 +145,7 @@ npm test
 - Actions active-run capacity, cancellation, and abort-and-wait shutdown: PASS
 - Actions terminal-result deferral until evidence finalization: PASS
 - Actions artifact download digest header and pre-header tamper rejection: PASS
+- Terminal-only Actions workspace/history deletion and EN/KO/JA confirmation UI: PASS
 - Restart-readable Actions state and retained artifact path reconstruction: PASS
 - Interrupted Actions restart finalization without redispatch: PASS
 - Android device integration disabled-by-default and all-or-none configuration: PASS

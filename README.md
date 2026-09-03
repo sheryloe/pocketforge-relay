@@ -111,7 +111,7 @@ The current Node.js MVP includes:
   asynchronous shutdown that waits for process and artifact finalization;
 - an optional, disabled-by-default GitHub Actions adapter with exact target and
   ref allowlists, expiring approval, status/cancel APIs, and bounded ZIP
-  evidence downloads; and
+  evidence downloads with explicit terminal-run deletion; and
 - an optional, disabled-by-default Android device-evidence path with reviewed
   APK snapshots, one-shot approval, authenticated evidence downloads, restart
   recovery, and explicit evidence deletion.

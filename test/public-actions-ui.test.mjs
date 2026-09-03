@@ -45,3 +45,10 @@ test('Actions UI protects external navigation and mobile touch targets', () => {
   assert.match(styles, /@media\(max-width:620px\)/);
   assert.match(styles, /\.actions-layout\{display:grid/);
 });
+
+test('Actions deletion is terminal-only and requires visible irreversible confirmation', () => {
+  assert.match(html, /id="actionDeleteButton"[^>]+hidden/);
+  assert.match(html, /id="actionDeleteConfirm"[^>]+aria-labelledby="actionDeleteHeading"[^>]+hidden/);
+  assert.match(script, /E\.actionDelete\.hidden = !ACTION_TERMINAL\.has\(run\.status\)/);
+  assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
+});

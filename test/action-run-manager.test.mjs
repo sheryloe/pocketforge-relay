@@ -263,6 +263,26 @@ test('restart marks an unfinished Actions observation as needs attention without
   }
 });
 
+test('manager deletes only terminal Actions workspace and durable history together', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-actions-delete-'));
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const adapter = fakeAdapter({ runApproved: async input => { await gate; return { jobId: input.jobId, label: '', targetId: 'android-debug', repository: 'https://github.com/example/mobile', ref: 'main', workflow: 'android.yml', status: 'succeeded', remoteRunId: 42, remoteUrl: null, remoteStatus: 'completed', remoteConclusion: 'success', artifacts: [], errorCode: null, error: null }; } });
+  const manager = new ActionRunManager({ adapter, dataDir, maxLogLines: 100, randomId: () => runId });
+  try {
+    const approval = manager.createApproval({ targetId: 'android-debug', ref: 'main' });
+    manager.createRun({ approvalId: approval.id, decision: 'approve' });
+    await assert.rejects(manager.deleteRun(runId), error => error.statusCode === 409 && error.code === 'run_not_terminal');
+    release();
+    await waitFor(() => manager.getRun(runId)?.finishedAt);
+    assert.equal(await manager.deleteRun(runId), true);
+    assert.equal(manager.getRun(runId), null);
+    await assert.rejects(fs.lstat(path.join(dataDir, 'action-runs', runId)), error => error.code === 'ENOENT');
+    await assert.rejects(fs.lstat(path.join(dataDir, 'action-run-events', `${runId}.jsonl`)), error => error.code === 'ENOENT');
+    assert.equal(await manager.deleteRun(runId), false);
+  } finally { release(); await manager.shutdown(); await fs.rm(dataDir, { recursive: true, force: true }); }
+});
+
 function fakeAdapter(overrides = {}) {
   return {
     listTargets: () => [{ id: 'android-debug', name: 'Android debug', repository: 'https://github.com/example/mobile', workflow: 'android.yml', refs: ['main'], inputs: {}, artifactNames: [] }],
