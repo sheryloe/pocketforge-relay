@@ -6,7 +6,7 @@ the configured relay key, not public-key signer identity or external provenance.
 
 Initial record: 2026-08-13
 
-Latest automated rerun: 2026-08-31
+Latest automated rerun: 2026-09-03
 
 ## v0.1.0 pre-release candidate rerun
 
@@ -97,7 +97,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 164 passed, 0 failed
+- Automated tests: 167 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -173,6 +173,7 @@ npm test
 - Fixed, non-reflective npm, Gradle, and CMake failure diagnostics: PASS
 - Proposal-only provider-neutral adapter and bounded evidence preview: PASS
 - Expiring explicit consent, single use, timeout, and structured-output rejection: PASS
+- EN/KO/JA mobile proposal preview, consent, and text-only result contract: PASS
 - Live external AI provider and model output: `NOT RUN`
 - Authenticated proposal-agent status, preview, and approval HTTP contract: PASS
 - Disabled-by-default proposal routes and capability state: PASS

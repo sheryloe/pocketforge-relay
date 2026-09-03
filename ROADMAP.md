@@ -51,8 +51,9 @@ documented legacy job request remains compatible.
   unconfigured and live model use is `NOT RUN`.
 - Authenticated status, preview, and explicit-approval HTTP routes expose that
   contract when a manager is configured; the default server remains disabled.
-- Evidence-assisted issue triage, failure classification, and repair proposals
-  remain to be connected to the mobile UI and a configured provider transport.
+- The EN/KO/JA mobile UI now implements evidence selection, exact disclosure
+  preview, explicit consent, and text-only structured proposal rendering. A
+  configured provider transport remains intentionally separate.
 - Agent-assisted repair branches with explicit human approval.
 - Signed user/device pairing, policy adapters, and approval before install,
   merge, release, or deploy.
