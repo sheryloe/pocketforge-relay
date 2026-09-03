@@ -136,6 +136,12 @@ async function actionsApi(req,res,url,actionsManager) {
       const run=actionsManager.getRun(match[1]);
       return run?json(res,200,{run}):json(res,404,{error:'GitHub Actions run not found.',code:'run_not_found'});
     }
+    if (match && req.method === 'DELETE') {
+      const body=await actionBody(req,['decision']);
+      if(body.decision!=='delete') throw requestError("decision must be 'delete'.",'actions_input');
+      const deleted=await actionsManager.deleteRun(match[1]);
+      return deleted?json(res,200,{deleted:true}):json(res,404,{error:'GitHub Actions run not found.',code:'run_not_found'});
+    }
     match = url.pathname.match(/^\/api\/actions\/runs\/([0-9a-f-]+)\/cancel$/i);
     if (match && req.method === 'POST') {
       await actionBody(req, []);

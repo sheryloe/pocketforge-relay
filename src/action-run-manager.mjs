@@ -5,6 +5,7 @@ import { loadActionTargets } from './action-targets.mjs';
 import { GitHubActionsClient } from './github-actions-client.mjs';
 import { ActionApprovalError, GitHubActionsRunnerAdapter } from './github-actions-runner.mjs';
 import { JobEventStore, projectJobEvents } from './job-event-store.mjs';
+import { removeOwnedJobDirectory } from './job-manager.mjs';
 import { createLogRedactor } from './security.mjs';
 
 const FINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled', 'needs_attention']);
@@ -211,6 +212,20 @@ export class ActionRunManager {
       ? 'GitHub accepted the workflow cancellation request.'
       : 'GitHub reported that the workflow was already finished.');
     return this.publicRun(run);
+  }
+
+  async deleteRun(id) {
+    const runId = String(id || '');
+    if (!RUN_ID.test(runId)) throw statusError('GitHub Actions run id is malformed.', 400, 'actions_input');
+    await this.eventStore.flush();
+    const run = this.runs.get(runId);
+    if (!run) return false;
+    if (!FINAL_STATUSES.has(run.status)) throw statusError('Only terminal GitHub Actions runs can be deleted.', 409, 'run_not_terminal');
+    if (!await this.eventStore.read(runId)) throw new Error('GitHub Actions run history is missing.');
+    await removeOwnedJobDirectory(this.runRoot, runId);
+    await this.eventStore.delete(runId);
+    this.runs.delete(runId);
+    return true;
   }
 
   shutdown() {

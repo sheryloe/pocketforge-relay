@@ -200,6 +200,12 @@
           <div id="actionLogConsole" class="console action-console"><p data-i18n="actions.remoteConsoleEmpty">Remote workflow output will appear here.</p></div>
           <div class="heading artifacts-title"><div><small data-i18n="actions.evidence">EVIDENCE</small><h3 data-i18n="actions.logsArtifacts">Logs and artifacts</h3></div><em id="actionArtifactCount" data-i18n="files.zero">0 files</em></div>
           <div id="actionArtifactsList" class="artifacts"><p data-i18n="actions.evidenceEmpty">Artifacts appear when evidence collection completes.</p></div>
+          <button id="actionDeleteButton" type="button" class="danger device-delete" data-i18n="actions.delete" hidden>Delete retained run data</button>
+          <section id="actionDeleteConfirm" class="delete-confirm" aria-labelledby="actionDeleteHeading" hidden>
+            <strong id="actionDeleteHeading" data-i18n="actions.deleteTitle">Permanently delete this run and its evidence?</strong>
+            <p data-i18n="actions.deleteBody">This removes the Actions record, logs, and downloaded evidence from this relay. It cannot be undone.</p>
+            <div class="approval-actions"><button id="actionDeleteConfirmButton" type="button" class="danger" data-i18n="actions.deleteConfirm">Confirm run deletion</button><button id="actionDeleteCancelButton" type="button" class="secondary" data-i18n="common.cancel">Cancel</button></div>
+          </section>
         </section>
       </div>
     </div>

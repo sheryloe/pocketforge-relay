@@ -163,6 +163,7 @@ const E = {
   actionConsole: $('#actionLogConsole'),
   actionCount: $('#actionArtifactCount'),
   actionArtifacts: $('#actionArtifactsList'),
+  actionDelete: $('#actionDeleteButton'), actionDeleteConfirm: $('#actionDeleteConfirm'), actionDeleteConfirmButton: $('#actionDeleteConfirmButton'), actionDeleteCancel: $('#actionDeleteCancelButton'),
   agentState: $('#agentState'), agentForm: $('#agentForm'), agentSource: $('#agentSourceSelect'), agentIntent: $('#agentIntentSelect'),
   agentReview: $('#agentReviewButton'), agentMessage: $('#agentMessage'), agentPreview: $('#agentPreview'), agentEvidence: $('#agentEvidence'),
   agentConsent: $('#agentConsent'), agentApprove: $('#agentApproveButton'), agentDiscard: $('#agentDiscardButton'), agentResult: $('#agentResult'),
@@ -244,6 +245,9 @@ function bind() {
   E.actionDiscard.onclick = () => discardActionApproval('message.actionsReviewDiscarded');
   E.actionRefresh.onclick = () => refreshActionRuns();
   E.actionCancel.onclick = cancelActionRun;
+  E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
+  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; };
+  E.actionDeleteConfirmButton.onclick = deleteActionRun;
   E.agentSource.onchange = discardAgentPreview;
   E.agentIntent.onchange = discardAgentPreview;
   E.agentForm.onsubmit = reviewAgentEvidence;
@@ -1300,6 +1304,8 @@ function renderActionRun() {
   E.actionTitle.textContent = run.label || `${run.targetId || 'Workflow'} · ${short(run.id)}`;
   setBadge(E.actionStatus, run.status);
   E.actionCancel.hidden = ACTION_TERMINAL.has(run.status);
+  E.actionDelete.hidden = !ACTION_TERMINAL.has(run.status);
+  E.actionDeleteConfirm.hidden = true;
   E.actionCancel.disabled = state.actions.refreshing || run.cancelRequested;
   E.actionCancel.textContent = t(run.cancelRequested ? 'common.cancelRequested' : 'common.cancel');
   setExternalRunUrl(run.remoteUrl);
@@ -1367,6 +1373,24 @@ async function downloadActionArtifact(id, artifact) {
   } catch (error) {
     msgRaw(E.actionMessage, error.message, 'error');
   }
+}
+
+async function deleteActionRun() {
+  const run = state.actions.active;
+  if (!run || !ACTION_TERMINAL.has(run.status)) return;
+  state.actions.refreshing = true;
+  E.actionDeleteConfirmButton.disabled = true;
+  updateActionControls();
+  msgKey(E.actionMessage, 'message.actionsDeleting');
+  try {
+    await api(`/api/actions/runs/${encodeURIComponent(run.id)}`, { method: 'DELETE', body: JSON.stringify({ decision: 'delete' }) });
+    state.actions.runs = state.actions.runs.filter(candidate => candidate.id !== run.id);
+    state.actions.active = null;
+    E.actionDeleteConfirm.hidden = true;
+    renderActionRuns(); renderActionRun(); populateAgentSources();
+    msgKey(E.actionMessage, 'message.actionsDeleted', 'success');
+  } catch (error) { msgRaw(E.actionMessage, error.message, 'error'); }
+  finally { state.actions.refreshing = false; E.actionDeleteConfirmButton.disabled = false; updateActionControls(); }
 }
 
 async function loadAgent() {

@@ -63,6 +63,7 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
     listRuns: () => [publicRun],
     getRun: runId => runId === id ? publicRun : null,
     cancelRun: async runId => { calls.push(['cancel', runId]); return runId === id ? { ...publicRun, cancelRequested: true } : null; },
+    deleteRun: async runId => { calls.push(['delete', runId]); return runId === id; },
     getArtifact: (runId, artifactId) => runId === id && artifactId === '0'
       ? { id: '0', name: 'evidence.zip', absolutePath: artifactPath, contentType: 'application/zip', sha256: 'c0cea64c613543e3273f05ff00bb093c9a3fa1345e2bc21ed8cf81f1aa824f95' }
       : null,
@@ -111,6 +112,12 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
     assert.equal(changed.status, 409);
     assert.deepEqual(await changed.json(), { error: 'Artifact changed after collection.' });
 
+    const invalidDelete = await request(base, `/api/actions/runs/${id}`, { method: 'DELETE', body: { decision: 'keep' } });
+    assert.equal(invalidDelete.response.status, 400);
+    const deleted = await request(base, `/api/actions/runs/${id}`, { method: 'DELETE', body: { decision: 'delete' } });
+    assert.equal(deleted.response.status, 200);
+    assert.deepEqual(deleted.body, { deleted: true });
+
     const unexpected = await request(base, '/api/actions/approvals', { method: 'POST', body: { targetId: 'android-debug', ref: 'main', secret: 'no' } });
     assert.equal(unexpected.response.status, 400);
     assert.equal(unexpected.body.code, 'actions_input');
@@ -120,7 +127,7 @@ test('Actions HTTP contract exposes public state and bounded artifact downloads'
       body: JSON.stringify({ targetId: 'android-debug', ref: 'main', label: 'x'.repeat(20_000) }),
     });
     assert.equal(oversized.status, 413);
-    assert.deepEqual(calls.map(call => call[0]), ['approval', 'run', 'cancel']);
+    assert.deepEqual(calls.map(call => call[0]), ['approval', 'run', 'cancel', 'delete']);
   } finally {
     await close(server);
     await fs.rm(directory, { recursive: true, force: true });
