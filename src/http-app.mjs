@@ -241,7 +241,13 @@ async function sendFile(res,filePath,headers,{sha256}={}) {
   } finally { if(!handedOff)await handle.close().catch(()=>{}); }
 }
 function fileResponseError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
-async function readJson(req,max){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}}
+async function readJson(req,max){
+  const contentType=String(req.headers['content-type']||'').split(';',1)[0].trim().toLowerCase();
+  if(contentType!=='application/json'){const e=new Error('Content-Type must be application/json.');e.statusCode=415;throw e;}
+  const declared=Number(req.headers['content-length']);
+  if(Number.isFinite(declared)&&declared>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}
+  const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>max){const e=new Error('Request body is too large.');e.statusCode=413;throw e;}chunks.push(c);}if(!chunks.length)return{};try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{const e=new Error('Request body must be valid JSON.');e.statusCode=400;throw e;}
+}
 function event(res,name,payload){if(res.destroyed||res.writableEnded)return;res.write(`event: ${name}\n`);res.write(`data: ${JSON.stringify(protocolEvent(payload))}\n\n`);}
 function json(res,status,payload){const body=`${JSON.stringify(payload)}\n`;res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}
 function text(res,status,body){res.writeHead(status,{'Content-Type':'text/plain; charset=utf-8','Content-Length':Buffer.byteLength(body)});res.end(body);}

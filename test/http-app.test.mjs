@@ -97,6 +97,19 @@ test('HTTP API preserves admission-control status codes', async () => {
   }
 });
 
+test('JSON endpoints reject an untyped request body', async () => {
+  const manager = { createJob() { throw new Error('must not run'); } };
+  const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/jobs`, {
+      method: 'POST', headers: { Authorization: 'Bearer test-token', 'Content-Type': 'text/plain' }, body: '{}',
+    });
+    assert.equal(response.status, 415);
+    assert.deepEqual(await response.json(), { error: 'Content-Type must be application/json.' });
+  } finally { await closeServer(server); }
+});
+
 test('HTTP API serves authenticated durable job history', async () => {
   const id = '123e4567-e89b-42d3-a456-426614174000';
   const manager = { getJobHistory: async value => value === id ? [{ schemaVersion: 1, jobId: id, sequence: 1, type: 'status', status: 'succeeded' }] : null };
