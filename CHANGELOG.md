@@ -10,6 +10,9 @@
 - Route Windows build and Android tool timeout/cancellation through a fixed
   shell-free `taskkill /t /f` process-tree request, retaining direct-child
   TERM/KILL fallback for unavailable platform data.
+- Harden the HTTP boundary with strict JSON media types and declared-size
+  rejection, source-specific job fields, request correlation, safe static
+  `HEAD`/ETag handling, bearer challenges, and explicit health methods.
 
 ## 2026-08-26 - Actions evidence finalization
 

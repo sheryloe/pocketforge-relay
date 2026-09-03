@@ -97,7 +97,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 170 passed, 0 failed
+- Automated tests: 179 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -133,7 +133,12 @@ npm test
 - Weak user-supplied token rejection: PASS
 - Child-process environment allowlist and ambient-secret exclusion: PASS
 - Fixed shell-free Windows process-tree termination invocation: PASS
+- Failed Windows process-tree helper fallback: PASS
 - Real Android SDK/Java grandchild termination: `NOT RUN`
+- HTTP JSON media-type and early declared-size rejection: PASS
+- Job-field allowlist and demo source-control rejection: PASS
+- Static `HEAD`, ETag revalidation, request correlation, bearer challenge, and
+  health method contracts: PASS
 - Exact relay-token and defensive secret-pattern log redaction: PASS
 - Waiting-queue capacity rejection: PASS
 - HTTP admission-control status propagation: PASS

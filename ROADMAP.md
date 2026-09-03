@@ -96,6 +96,13 @@ work.
 
 ## v0.5 - Contributor ecosystem foundation (delivered)
 
+The 2026-09-03 fourteen-unit hardening sprint delivered Windows process-tree
+termination and fallback, strict HTTP input contracts, source-specific job
+validation, mobile-friendly static revalidation, request correlation, standard
+authentication challenges, and health-probe method contracts. The candidate
+passed syntax checks and 179 automated tests; real SDK/device termination is
+still `NOT RUN`.
+
 - Bounded bug, pilot, adapter, and good-first-issue forms with private security
   routing and explicit trust/verification questions.
 - Five real starter issues with independently testable acceptance criteria,
