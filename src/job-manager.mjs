@@ -35,6 +35,7 @@ export class JobManager {
 
   createJob(input = {}) {
     if (this.stopped) throw statusError('Runner is shutting down.', 503);
+    validateJobInput(input);
     this.pruneRetainedJobs();
     if (this.queue.length >= (this.config.maxQueuedJobs ?? 20)) {
       throw statusError('Job queue is full. Try again after a queued job starts.', 429);
@@ -380,6 +381,13 @@ export class JobManager {
       artifactManifest: job.artifactManifest,
     };
   }
+}
+
+function validateJobInput(input) {
+  if(!input||typeof input!=='object'||Array.isArray(input)||Object.getPrototypeOf(input)!==Object.prototype) throw statusError('Job input must be a JSON object.',400);
+  const allowed=new Set(['sourceType','presetId','label','repository','ref']);
+  const unexpected=Object.keys(input).find(key=>!allowed.has(key));
+  if(unexpected) throw statusError(`Unexpected job field: ${unexpected}`,400);
 }
 
 function persistedEvent(job, event, sequence) {

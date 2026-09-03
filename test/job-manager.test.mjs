@@ -8,6 +8,12 @@ import { JobManager, resolveGitCommit } from '../src/job-manager.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+test('job creation rejects fields outside the public contract', async () => {
+  const manager=new JobManager(makeConfig());
+  assert.throws(()=>manager.createJob({sourceType:'demo',presetId:'demo-web',command:'whoami'}),error=>error.statusCode===400&&/Unexpected job field/.test(error.message));
+  await manager.shutdown();
+});
+
 test('bundled demo completes workspace-to-artifact loop with redacted logs', async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pf-jobs-'));
   const manager = new JobManager(makeConfig({ dataDir }));
