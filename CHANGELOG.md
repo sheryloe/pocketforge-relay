@@ -7,6 +7,9 @@
   non-executable advice without HTML injection.
 - Add explicit terminal-only Actions deletion that removes the owned workspace
   and durable event history together, with an EN/KO/JA irreversible-confirmation UI.
+- Route Windows build and Android tool timeout/cancellation through a fixed
+  shell-free `taskkill /t /f` process-tree request, retaining direct-child
+  TERM/KILL fallback for unavailable platform data.
 
 ## 2026-08-26 - Actions evidence finalization
 

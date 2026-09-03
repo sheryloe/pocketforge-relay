@@ -281,9 +281,11 @@ container or micro-VM isolation, and an immutable/append-only evidence sink. The
 HMAC detects modification; it does not prevent deletion, prove physical-device
 authenticity, or replace signed pairing.
 
-On Windows, timeout currently terminates the direct `cmd.exe` child used for SDK
-batch wrappers. Java grandchildren may outlive it because a Job Object/process-
-tree terminator is not implemented. This remains a documented P2 risk.
+On Windows, timeout and cancellation request the fixed absolute
+`%SystemRoot%\\System32\\taskkill.exe /pid <pid> /t /f` process-tree operation
+with `shell: false`; invalid or unavailable platform data falls back to the
+existing direct-child TERM/KILL sequence. The fixed invocation contract is
+tested, while termination of a real SDK/Java grandchild remains `NOT RUN`.
 
 Foreground parsing depends on current Android `dumpsys activity` formats. The
 core fails closed when it cannot identify one resumed package, but version- and

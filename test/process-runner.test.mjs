@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { runProcessStep } from '../src/process-runner.mjs';
+import { EventEmitter } from 'node:events';
+import { runProcessStep, terminateProcessTree } from '../src/process-runner.mjs';
 
 test('child processes receive only the bounded OS and toolchain environment', async () => {
   const logs = [];
@@ -74,4 +75,20 @@ test('Windows runs a Gradle-style batch wrapper but rejects command injection ch
   } finally {
     await fs.rm(cwd, { recursive: true, force: true });
   }
+});
+
+test('Windows termination requests a fixed taskkill process tree without a shell', () => {
+  const calls = [];
+  const child = { pid: 42, exitCode: null, signalCode: null, kill: signal => calls.push(['fallback', signal]) };
+  const spawnImpl = (file, args, options) => {
+    calls.push([file, args, options]);
+    const killer = new EventEmitter();
+    killer.unref = () => calls.push(['unref']);
+    return killer;
+  };
+  terminateProcessTree(child, { SystemRoot: 'C:\\Windows' }, { platform: 'win32', spawnImpl });
+  assert.equal(calls[0][0], 'C:\\Windows\\System32\\taskkill.exe');
+  assert.deepEqual(calls[0][1], ['/pid', '42', '/t', '/f']);
+  assert.deepEqual(calls[0][2], { shell: false, windowsHide: true, stdio: 'ignore' });
+  assert.deepEqual(calls.slice(1), [['unref']]);
 });

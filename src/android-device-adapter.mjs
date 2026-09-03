@@ -8,7 +8,7 @@ import {
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { buildChildEnvironment } from './process-runner.mjs';
+import { buildChildEnvironment, terminateProcessTree } from './process-runner.mjs';
 
 const DEFAULT_TEXT_LIMIT = 1024 * 1024;
 const DEFAULT_BINARY_LIMIT = 10 * 1024 * 1024;
@@ -83,15 +83,13 @@ export async function runBoundedProcess({
     let terminalError = null;
     let settled = false;
     let forceKillTimer;
+    let terminationRequested = false;
 
     const terminate = error => {
       terminalError ??= error;
-      if (child.exitCode !== null || child.signalCode !== null) return;
-      child.kill('SIGTERM');
-      forceKillTimer ??= setTimeout(() => {
-        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-      }, 2_000);
-      forceKillTimer.unref();
+      if (terminationRequested) return;
+      terminationRequested = true;
+      forceKillTimer = terminateProcessTree(child, childEnvironment);
     };
 
     const collect = (chunks, kind, limit) => chunk => {

@@ -45,7 +45,8 @@ export function runProcessStep({ step, cwd, timeoutMs, signal, onLog, environmen
       windowsVerbatimArguments: invocation.windowsVerbatimArguments,
     });
     const flushers = [capture(child.stdout, 'stdout', onLog), capture(child.stderr, 'stderr', onLog)];
-    const requestTermination = () => { forceKillTimer ??= terminate(child); };
+    let terminationRequested = false;
+    const requestTermination = () => { if (!terminationRequested) { terminationRequested = true; forceKillTimer = terminateProcessTree(child, childEnvironment); } };
     const timeout = setTimeout(() => { onLog('system', `Step exceeded ${timeoutMs} ms and was terminated.`); requestTermination(); }, timeoutMs);
     const onAbort = () => { onLog('system', 'Cancellation requested. Terminating the active process.'); requestTermination(); };
     signal?.addEventListener('abort', onAbort, { once: true });
@@ -106,8 +107,22 @@ function capture(stream, channel, onLog) {
   stream.on('data', chunk => { buffer += chunk; const lines = buffer.split(/\r?\n/); buffer = lines.pop() ?? ''; lines.forEach(line => onLog(channel, line)); });
   return () => { if (buffer) onLog(channel, buffer); buffer = ''; };
 }
-function terminate(child) {
+export function terminateProcessTree(child, environment = process.env, { platform = process.platform, spawnImpl = spawn } = {}) {
   if (child.exitCode !== null || child.signalCode !== null) return undefined;
+  const systemRoot = environmentValue(environment, 'SYSTEMROOT');
+  if (platform === 'win32' && Number.isSafeInteger(child.pid) && child.pid > 0
+    && typeof systemRoot === 'string' && path.win32.isAbsolute(systemRoot)) {
+    try {
+      const killer = spawnImpl(path.win32.join(systemRoot, 'System32', 'taskkill.exe'), ['/pid', String(child.pid), '/t', '/f'], { shell: false, windowsHide: true, stdio: 'ignore' });
+      killer.on?.('error', () => terminateDirectChild(child));
+      killer.unref?.();
+      return undefined;
+    } catch { return terminateDirectChild(child); }
+  }
+  return terminateDirectChild(child);
+}
+
+function terminateDirectChild(child) {
   child.kill('SIGTERM');
   const timer = setTimeout(() => {
     if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
