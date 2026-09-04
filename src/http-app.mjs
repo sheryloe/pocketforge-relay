@@ -235,7 +235,7 @@ async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={})
       if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
     }
     const etag=`"${opened.size.toString(16)}-${Math.trunc(opened.mtimeMs).toString(16)}"`;
-    if(ifNoneMatch===etag){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
+    if(matchesEtag(ifNoneMatch,etag)){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
     res.writeHead(200,{...headers,ETag:etag,'Content-Length':opened.size});
     if(head){res.end();return;}
     const stream=handle.createReadStream({autoClose:true,start:0});
@@ -251,6 +251,7 @@ async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={})
     });
   } finally { if(!handedOff)await handle.close().catch(()=>{}); }
 }
+function matchesEtag(header,etag){return typeof header==='string'&&header.split(',').some(value=>{const tag=value.trim();return tag==='*'||tag===etag||tag===`W/${etag}`;});}
 function fileResponseError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 async function readJson(req,max){
   const contentType=String(req.headers['content-type']||'').split(';',1)[0].trim().toLowerCase();

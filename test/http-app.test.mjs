@@ -135,6 +135,17 @@ test('static files use validators for lightweight mobile refreshes', async () =>
   } finally { await closeServer(server); }
 });
 
+test('static validators accept weak and listed If-None-Match values', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const etag=(await fetch(url,{method:'HEAD'})).headers.get('etag');
+    assert.equal((await fetch(url,{headers:{'If-None-Match':`"other", W/${etag}`}})).status,304);
+    assert.equal((await fetch(url,{headers:{'If-None-Match':'*'}})).status,304);
+  } finally { await closeServer(server); }
+});
+
 test('JSON endpoints reject an untyped request body', async () => {
   const manager = { createJob() { throw new Error('must not run'); } };
   const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
