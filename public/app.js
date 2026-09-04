@@ -211,7 +211,7 @@ function bind() {
     E.jobDeleteConfirm.hidden = false;
     E.jobDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; };
+  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; E.jobDelete.focus({ preventScroll: true }); };
   E.jobDeleteConfirmButton.onclick = deleteJob;
 
   E.deviceJob.onchange = () => {
@@ -231,7 +231,7 @@ function bind() {
     E.deviceDeleteConfirm.hidden = false;
     E.deviceDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; };
+  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; E.deviceDelete.focus({ preventScroll: true }); };
   E.deviceDeleteConfirmButton.onclick = deleteDeviceEvidence;
 
   E.actionTarget.onchange = () => {
@@ -246,7 +246,7 @@ function bind() {
   E.actionRefresh.onclick = () => refreshActionRuns();
   E.actionCancel.onclick = cancelActionRun;
   E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
-  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; };
+  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; E.actionDelete.focus({ preventScroll: true }); };
   E.actionDeleteConfirmButton.onclick = deleteActionRun;
   E.agentSource.onchange = discardAgentPreview;
   E.agentIntent.onchange = discardAgentPreview;

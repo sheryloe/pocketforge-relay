@@ -47,6 +47,7 @@ test('device UI covers the authenticated prepare, approve, poll, evidence, disca
   }
   assert.match(html, /id="deviceDeleteConfirm"[^>]+hidden/);
   assert.match(html, /id="deviceDeleteConfirmButton"/);
+  assert.match(script, /E\.deviceDeleteCancel\.onclick = \(\) => \{ E\.deviceDeleteConfirm\.hidden = true; E\.deviceDelete\.focus\(\{ preventScroll: true \}\); \}/);
 });
 
 test('recovered evidence stays discoverable after in-memory jobs disappear on restart', () => {

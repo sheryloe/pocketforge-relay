@@ -21,4 +21,5 @@ test('local job deletion requires a visible irreversible confirmation and fixed 
   assert.match(html, /id="jobDeleteConfirmButton"[^>]*data-i18n="local\.deleteConfirm"/);
   assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
   assert.match(script, /state\.jobs = state\.jobs\.filter\(candidate => candidate\.id !== job\.id\)/);
+  assert.match(script, /E\.jobDeleteCancel\.onclick = \(\) => \{ E\.jobDeleteConfirm\.hidden = true; E\.jobDelete\.focus\(\{ preventScroll: true \}\); \}/);
 });
