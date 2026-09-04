@@ -13,6 +13,10 @@
 - Harden the HTTP boundary with strict JSON media types and declared-size
   rejection, source-specific job fields, request correlation, safe static
   `HEAD`/ETag handling, bearer challenges, and explicit health methods.
+- Restore keyboard focus after deletion cancellation across local, device, and
+  Actions surfaces; expose confirmation expansion state and support Escape.
+- Accept standard weak/list/wildcard static validators and add authenticated
+  integrity-verifying `HEAD` requests for retained artifacts and evidence.
 
 ## 2026-08-26 - Actions evidence finalization
 

@@ -97,7 +97,7 @@ npm test
 ## Result
 
 - Syntax checks: PASS
-- Automated tests: 179 passed, 0 failed
+- Automated tests: 182 passed, 0 failed
 - Restart-readable mobile job discovery and recovered artifact download: PASS
 - Terminal full-data deletion contract and confirmation UI: PASS
 - Destructive deletion click during real-browser inspection: `NOT RUN`
@@ -139,6 +139,10 @@ npm test
 - Job-field allowlist and demo source-control rejection: PASS
 - Static `HEAD`, ETag revalidation, request correlation, bearer challenge, and
   health method contracts: PASS
+- Deletion cancellation focus return, ARIA expansion state, and Escape path:
+  PASS
+- Weak/list/wildcard ETag matching and body-free artifact integrity checks:
+  PASS
 - Exact relay-token and defensive secret-pattern log redaction: PASS
 - Waiting-queue capacity rejection: PASS
 - HTTP admission-control status propagation: PASS
