@@ -50,7 +50,7 @@ async function api(req,res,url,manager,actionsManager,deviceActionsRuntime,propo
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)$/i); if (m && req.method === 'DELETE') { const body=await readJson(req,1024); if(body.decision!=='delete') return json(res,400,{error:"decision must be 'delete'."}); const deleted=await manager.deleteJobData(m[1]); return deleted?json(res,200,{deleted:true}):json(res,404,{error:'Job data not found.'}); }
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/cancel$/i); if (m && req.method === 'POST') { const j=manager.cancelJob(m[1]); return j?json(res,200,{job:j}):json(res,404,{error:'Job not found.'}); }
   m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/events$/i); if (m && req.method === 'GET') return streamJobEvents(req,res,manager,m[1],eventStreamClosers);
-  m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/artifacts\/([0-9]+)$/i); if (m && req.method === 'GET') { const a=await manager.getArtifact(m[1],m[2]); if(!a) return json(res,404,{error:'Artifact not found.'}); return sendFile(res,a.absolutePath,{'Content-Type':a.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(a.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':a.sha256},{sha256:a.sha256}); }
+  m = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/artifacts\/([0-9]+)$/i); if (m && (req.method === 'GET'||req.method==='HEAD')) { const a=await manager.getArtifact(m[1],m[2]); if(!a) return json(res,404,{error:'Artifact not found.'}); return sendFile(res,a.absolutePath,{'Content-Type':a.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(a.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':a.sha256},{sha256:a.sha256,head:req.method==='HEAD'}); }
   return json(res,404,{error:'API route not found.'});
 }
 
@@ -95,7 +95,7 @@ async function deviceActionsApi(req,res,url,jobManager,runtime) {
       return json(res,202,{action});
     }
     match=url.pathname.match(/^\/api\/device-actions\/([A-Za-z0-9_-]{1,128})$/);
-    if(match&&req.method==='GET') {
+    if(match&&(req.method==='GET'||req.method==='HEAD')) {
       const action=runtime.getAction(match[1]);
       return action?json(res,200,{action}):json(res,404,{error:'Device action was not found.',code:'action_not_found'});
     }
@@ -107,7 +107,7 @@ async function deviceActionsApi(req,res,url,jobManager,runtime) {
     match=url.pathname.match(/^\/api\/device-actions\/([A-Za-z0-9_-]{1,128})\/evidence\/(json|logcat|crash|screenshot)$/);
     if(match&&req.method==='GET') {
       const file=await runtime.getEvidenceFile(match[1],match[2]);
-      return sendFile(res,file.absolutePath,{'Content-Type':file.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+      return sendFile(res,file.absolutePath,{'Content-Type':file.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},{head:req.method==='HEAD'});
     }
     match=url.pathname.match(/^\/api\/device-actions\/([A-Za-z0-9_-]{1,128})\/evidence$/);
     if(match&&req.method==='DELETE') {
@@ -139,7 +139,7 @@ async function actionsApi(req,res,url,actionsManager) {
       return json(res,202,{run:actionsManager.createRun(body)});
     }
     let match = url.pathname.match(/^\/api\/actions\/runs\/([0-9a-f-]+)$/i);
-    if (match && req.method === 'GET') {
+    if (match && (req.method === 'GET'||req.method==='HEAD')) {
       const run=actionsManager.getRun(match[1]);
       return run?json(res,200,{run}):json(res,404,{error:'GitHub Actions run not found.',code:'run_not_found'});
     }
@@ -159,7 +159,7 @@ async function actionsApi(req,res,url,actionsManager) {
     if (match && req.method === 'GET') {
       const artifact=actionsManager.getArtifact(match[1],match[2]);
       if(!artifact) return json(res,404,{error:'GitHub Actions artifact not found.',code:'artifact_not_found'});
-      return sendFile(res,artifact.absolutePath,{'Content-Type':artifact.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(artifact.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':artifact.sha256},{sha256:artifact.sha256});
+      return sendFile(res,artifact.absolutePath,{'Content-Type':artifact.contentType,'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(artifact.name)}`,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-Artifact-SHA256':artifact.sha256},{sha256:artifact.sha256,head:req.method==='HEAD'});
     }
     return json(res,404,{error:'Actions API route not found.',code:'actions_route_not_found'});
   } catch (error) {
@@ -235,7 +235,7 @@ async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={})
       if(!/^[a-f0-9]{64}$/.test(sha256)||!sameFile(opened,verified)||actual!==sha256){const error=new Error('Artifact changed after collection.');error.statusCode=409;throw error;}
     }
     const etag=`"${opened.size.toString(16)}-${Math.trunc(opened.mtimeMs).toString(16)}"`;
-    if(ifNoneMatch===etag){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
+    if(matchesEtag(ifNoneMatch,etag)){res.writeHead(304,{...headers,ETag:etag});res.end();return;}
     res.writeHead(200,{...headers,ETag:etag,'Content-Length':opened.size});
     if(head){res.end();return;}
     const stream=handle.createReadStream({autoClose:true,start:0});
@@ -251,6 +251,7 @@ async function sendFile(res,filePath,headers,{sha256,head=false,ifNoneMatch}={})
     });
   } finally { if(!handedOff)await handle.close().catch(()=>{}); }
 }
+function matchesEtag(header,etag){return typeof header==='string'&&header.split(',').some(value=>{const tag=value.trim();return tag==='*'||tag===etag||tag===`W/${etag}`;});}
 function fileResponseError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 async function readJson(req,max){
   const contentType=String(req.headers['content-type']||'').split(';',1)[0].trim().toLowerCase();

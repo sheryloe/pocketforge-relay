@@ -209,9 +209,10 @@ function bind() {
   E.cancel.onclick = cancel;
   E.jobDelete.onclick = () => {
     E.jobDeleteConfirm.hidden = false;
+    E.jobDelete.setAttribute('aria-expanded', 'true');
     E.jobDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; };
+  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; E.jobDelete.setAttribute('aria-expanded', 'false'); E.jobDelete.focus({ preventScroll: true }); };
   E.jobDeleteConfirmButton.onclick = deleteJob;
 
   E.deviceJob.onchange = () => {
@@ -229,9 +230,10 @@ function bind() {
   E.deviceActionsRefresh.onclick = () => refreshDeviceActions();
   E.deviceDelete.onclick = () => {
     E.deviceDeleteConfirm.hidden = false;
+    E.deviceDelete.setAttribute('aria-expanded', 'true');
     E.deviceDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; };
+  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; E.deviceDelete.setAttribute('aria-expanded', 'false'); E.deviceDelete.focus({ preventScroll: true }); };
   E.deviceDeleteConfirmButton.onclick = deleteDeviceEvidence;
 
   E.actionTarget.onchange = () => {
@@ -245,9 +247,14 @@ function bind() {
   E.actionDiscard.onclick = () => discardActionApproval('message.actionsReviewDiscarded');
   E.actionRefresh.onclick = () => refreshActionRuns();
   E.actionCancel.onclick = cancelActionRun;
-  E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
-  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; };
+  E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDelete.setAttribute('aria-expanded', 'true'); E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
+  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; E.actionDelete.setAttribute('aria-expanded', 'false'); E.actionDelete.focus({ preventScroll: true }); };
   E.actionDeleteConfirmButton.onclick = deleteActionRun;
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    const open = [[E.jobDeleteConfirm, E.jobDeleteCancel], [E.deviceDeleteConfirm, E.deviceDeleteCancel], [E.actionDeleteConfirm, E.actionDeleteCancel]].find(([panel]) => !panel.hidden);
+    if (open) { event.preventDefault(); open[1].click(); }
+  });
   E.agentSource.onchange = discardAgentPreview;
   E.agentIntent.onchange = discardAgentPreview;
   E.agentForm.onsubmit = reviewAgentEvidence;
@@ -390,6 +397,7 @@ function render() {
   E.cancel.hidden = LOCAL_TERMINAL.has(job.status);
   E.jobDelete.hidden = !LOCAL_TERMINAL.has(job.status);
   E.jobDeleteConfirm.hidden = true;
+  E.jobDelete.setAttribute('aria-expanded', 'false');
   renderMeta(E.meta, [
     `job=${short(job.id)}`,
     `source=${job.sourceType}`,
@@ -504,6 +512,7 @@ function clearSelectedJob() {
   E.cancel.hidden = true;
   E.jobDelete.hidden = true;
   E.jobDeleteConfirm.hidden = true;
+  E.jobDelete.setAttribute('aria-expanded', 'false');
   E.meta.replaceChildren();
   renderLogs(E.console, [], t('local.consoleEmpty'));
   renderArtifacts(E.artifacts, E.count, [], () => {}, 'message.artifactsAfterRun');
@@ -945,6 +954,7 @@ function renderDeviceAction() {
   E.deviceActionError.hidden = !actionError;
   E.deviceActionError.textContent = actionError;
   E.deviceDeleteConfirm.hidden = true;
+  E.deviceDelete.setAttribute('aria-expanded', 'false');
   renderDeviceEvidence(action);
   renderDeviceApproval(action);
 }
@@ -1025,6 +1035,7 @@ async function deleteDeviceEvidence() {
     state.device.actions = state.device.actions.filter(candidate => candidate.id !== action.id);
     if (state.device.active?.id === action.id) state.device.active = null;
     E.deviceDeleteConfirm.hidden = true;
+    E.deviceDelete.setAttribute('aria-expanded', 'false');
     renderDeviceActions();
     renderDeviceAction();
     msgKey(E.deviceMessage, 'message.deviceEvidenceDeleted', 'success');
@@ -1306,6 +1317,7 @@ function renderActionRun() {
   E.actionCancel.hidden = ACTION_TERMINAL.has(run.status);
   E.actionDelete.hidden = !ACTION_TERMINAL.has(run.status);
   E.actionDeleteConfirm.hidden = true;
+  E.actionDelete.setAttribute('aria-expanded', 'false');
   E.actionCancel.disabled = state.actions.refreshing || run.cancelRequested;
   E.actionCancel.textContent = t(run.cancelRequested ? 'common.cancelRequested' : 'common.cancel');
   setExternalRunUrl(run.remoteUrl);
@@ -1387,6 +1399,7 @@ async function deleteActionRun() {
     state.actions.runs = state.actions.runs.filter(candidate => candidate.id !== run.id);
     state.actions.active = null;
     E.actionDeleteConfirm.hidden = true;
+    E.actionDelete.setAttribute('aria-expanded', 'false');
     renderActionRuns(); renderActionRun(); populateAgentSources();
     msgKey(E.actionMessage, 'message.actionsDeleted', 'success');
   } catch (error) { msgRaw(E.actionMessage, error.message, 'error'); }

@@ -72,6 +72,14 @@ represented as implemented until code and verification records exist.
 
 ## September 2026 release gates
 
+The 2026-09-04 through 2026-09-10 maintenance batch closes the deletion-focus
+accessibility issue across all three destructive UI surfaces, keeps disclosure
+state synchronized, adds an Escape cancel path, implements standard conditional
+static requests, and verifies retained artifacts with authenticated body-free
+HEAD requests. Syntax checks and 182 automated tests passed locally. Issue #13
+remains assigned to its external contributor and is intentionally outside this
+batch.
+
 This weekday plan starts after the ten-day candidate-preparation batch. A day
 closes only when its evidence is recorded as `PASS`, `FAIL`, or `NOT RUN`.
 Failed blocking gates stop publication; they do not trigger unrelated feature

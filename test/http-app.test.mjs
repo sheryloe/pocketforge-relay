@@ -135,6 +135,17 @@ test('static files use validators for lightweight mobile refreshes', async () =>
   } finally { await closeServer(server); }
 });
 
+test('static validators accept weak and listed If-None-Match values', async () => {
+  const server=createPocketForgeServer({config:{publicDir:path.join(root,'public'),token:'test-token'},manager:{}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  try {
+    const etag=(await fetch(url,{method:'HEAD'})).headers.get('etag');
+    assert.equal((await fetch(url,{headers:{'If-None-Match':`"other", W/${etag}`}})).status,304);
+    assert.equal((await fetch(url,{headers:{'If-None-Match':'*'}})).status,304);
+  } finally { await closeServer(server); }
+});
+
 test('JSON endpoints reject an untyped request body', async () => {
   const manager = { createJob() { throw new Error('must not run'); } };
   const server = createPocketForgeServer({ config: { publicDir: root, token: 'test-token' }, manager });
@@ -249,6 +260,15 @@ test('artifact download publishes the collection-time SHA-256 digest', async () 
     await closeServer(server);
     await fs.rm(sandbox, { recursive: true, force: true });
   }
+});
+
+test('artifact HEAD verifies integrity without transferring retained bytes', async () => {
+  const sandbox=await fs.mkdtemp(path.join(os.tmpdir(),'pf-http-head-'));const file=path.join(sandbox,'artifact.txt');await fs.writeFile(file,'artifact');
+  const sha256='c7c5c1d70c5dec4416ab6158afd0b223ef40c29b1dc1f97ed9428b94d4cadb1c';
+  const manager={getArtifact:()=>({absolutePath:file,name:'artifact.txt',contentType:'text/plain; charset=utf-8',sha256})};
+  const server=createPocketForgeServer({config:{publicDir:root,token:'test-token'},manager});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try { const response=await fetch(`http://127.0.0.1:${server.address().port}/api/jobs/123e4567-e89b-42d3-a456-426614174000/artifacts/0`,{method:'HEAD',headers:{Authorization:'Bearer test-token'}});assert.equal(response.status,200);assert.equal(response.headers.get('x-artifact-sha256'),sha256);assert.equal(response.headers.get('content-length'),'8');assert.equal(await response.text(),''); }
+  finally { await closeServer(server);await fs.rm(sandbox,{recursive:true,force:true}); }
 });
 
 test('artifact download rejects bytes changed after collection', async () => {

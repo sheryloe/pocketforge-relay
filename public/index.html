@@ -61,7 +61,7 @@
       <div id="logConsole" class="console"><p data-i18n="local.consoleEmpty">Build output will stream here. No desktop-shaped theater, just the useful signals.</p></div>
       <div class="heading artifacts-title"><div><small data-i18n="local.retrieve">04 · RETRIEVE</small><h3 data-i18n="local.artifacts">Artifacts</h3></div><em id="artifactCount" data-i18n="files.zero">0 files</em></div>
       <div id="artifactsList" class="artifacts"><p data-i18n="local.artifactsEmpty">Artifacts appear after a job completes.</p></div>
-      <button id="jobDeleteButton" type="button" class="danger device-delete" data-i18n="local.delete" hidden>Delete retained job data</button>
+      <button id="jobDeleteButton" type="button" class="danger device-delete" data-i18n="local.delete" aria-controls="jobDeleteConfirm" aria-expanded="false" hidden>Delete retained job data</button>
       <section id="jobDeleteConfirm" class="delete-confirm" aria-labelledby="jobDeleteHeading" hidden>
         <strong id="jobDeleteHeading" data-i18n="local.deleteTitle">Permanently delete this job and its retained data?</strong>
         <p data-i18n="local.deleteBody">This removes the job record, workspace, logs, and artifact snapshots from this relay. It cannot be undone.</p>
@@ -132,7 +132,7 @@
           <p id="deviceActionError" class="message error" hidden></p>
           <div class="heading artifacts-title"><div><small data-i18n="device.evidence">DEVICE EVIDENCE</small><h3 data-i18n="device.evidenceFiles">Verification files</h3></div><em id="deviceEvidenceState" class="status neutral" data-i18n="device.evidencePending">pending</em></div>
           <div id="deviceEvidenceList" class="device-evidence-list"><p data-i18n="device.evidenceEmpty">Evidence downloads appear after the action finishes.</p></div>
-          <button id="deviceDeleteButton" type="button" class="danger device-delete" data-i18n="device.delete" hidden>Delete retained record and evidence</button>
+          <button id="deviceDeleteButton" type="button" class="danger device-delete" data-i18n="device.delete" aria-controls="deviceDeleteConfirm" aria-expanded="false" hidden>Delete retained record and evidence</button>
           <section id="deviceDeleteConfirm" class="delete-confirm" aria-labelledby="deviceDeleteHeading" hidden>
             <strong id="deviceDeleteHeading" data-i18n="device.deleteTitle">Permanently delete this record and its evidence?</strong>
             <p data-i18n="device.deleteBody">This removes the retained action record and any JSON, logcat, crash output, or screenshot from the relay. It cannot be undone.</p>
@@ -200,7 +200,7 @@
           <div id="actionLogConsole" class="console action-console"><p data-i18n="actions.remoteConsoleEmpty">Remote workflow output will appear here.</p></div>
           <div class="heading artifacts-title"><div><small data-i18n="actions.evidence">EVIDENCE</small><h3 data-i18n="actions.logsArtifacts">Logs and artifacts</h3></div><em id="actionArtifactCount" data-i18n="files.zero">0 files</em></div>
           <div id="actionArtifactsList" class="artifacts"><p data-i18n="actions.evidenceEmpty">Artifacts appear when evidence collection completes.</p></div>
-          <button id="actionDeleteButton" type="button" class="danger device-delete" data-i18n="actions.delete" hidden>Delete retained run data</button>
+          <button id="actionDeleteButton" type="button" class="danger device-delete" data-i18n="actions.delete" aria-controls="actionDeleteConfirm" aria-expanded="false" hidden>Delete retained run data</button>
           <section id="actionDeleteConfirm" class="delete-confirm" aria-labelledby="actionDeleteHeading" hidden>
             <strong id="actionDeleteHeading" data-i18n="actions.deleteTitle">Permanently delete this run and its evidence?</strong>
             <p data-i18n="actions.deleteBody">This removes the Actions record, logs, and downloaded evidence from this relay. It cannot be undone.</p>
