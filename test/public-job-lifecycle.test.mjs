@@ -19,7 +19,8 @@ test('local job UI discovers durable projections and opens recovered jobs withou
 test('local job deletion requires a visible irreversible confirmation and fixed decision', () => {
   assert.match(html, /id="jobDeleteConfirm"[^>]*aria-labelledby="jobDeleteHeading"[^>]*hidden/);
   assert.match(html, /id="jobDeleteConfirmButton"[^>]*data-i18n="local\.deleteConfirm"/);
+  assert.match(html, /id="jobDeleteButton"[^>]*aria-controls="jobDeleteConfirm"[^>]*aria-expanded="false"/);
   assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
   assert.match(script, /state\.jobs = state\.jobs\.filter\(candidate => candidate\.id !== job\.id\)/);
-  assert.match(script, /E\.jobDeleteCancel\.onclick = \(\) => \{ E\.jobDeleteConfirm\.hidden = true; E\.jobDelete\.focus\(\{ preventScroll: true \}\); \}/);
+  assert.match(script, /E\.jobDeleteCancel\.onclick = \(\) => \{ E\.jobDeleteConfirm\.hidden = true; E\.jobDelete\.setAttribute\('aria-expanded', 'false'\); E\.jobDelete\.focus/);
 });

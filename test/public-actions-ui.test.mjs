@@ -49,7 +49,8 @@ test('Actions UI protects external navigation and mobile touch targets', () => {
 test('Actions deletion is terminal-only and requires visible irreversible confirmation', () => {
   assert.match(html, /id="actionDeleteButton"[^>]+hidden/);
   assert.match(html, /id="actionDeleteConfirm"[^>]+aria-labelledby="actionDeleteHeading"[^>]+hidden/);
+  assert.match(html, /id="actionDeleteButton"[^>]*aria-controls="actionDeleteConfirm"[^>]*aria-expanded="false"/);
   assert.match(script, /E\.actionDelete\.hidden = !ACTION_TERMINAL\.has\(run\.status\)/);
   assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
-  assert.match(script, /E\.actionDeleteCancel\.onclick = \(\) => \{ E\.actionDeleteConfirm\.hidden = true; E\.actionDelete\.focus\(\{ preventScroll: true \}\); \}/);
+  assert.match(script, /E\.actionDeleteCancel\.onclick = \(\) => \{ E\.actionDeleteConfirm\.hidden = true; E\.actionDelete\.setAttribute\('aria-expanded', 'false'\); E\.actionDelete\.focus/);
 });

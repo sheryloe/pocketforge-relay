@@ -209,9 +209,10 @@ function bind() {
   E.cancel.onclick = cancel;
   E.jobDelete.onclick = () => {
     E.jobDeleteConfirm.hidden = false;
+    E.jobDelete.setAttribute('aria-expanded', 'true');
     E.jobDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; E.jobDelete.focus({ preventScroll: true }); };
+  E.jobDeleteCancel.onclick = () => { E.jobDeleteConfirm.hidden = true; E.jobDelete.setAttribute('aria-expanded', 'false'); E.jobDelete.focus({ preventScroll: true }); };
   E.jobDeleteConfirmButton.onclick = deleteJob;
 
   E.deviceJob.onchange = () => {
@@ -229,9 +230,10 @@ function bind() {
   E.deviceActionsRefresh.onclick = () => refreshDeviceActions();
   E.deviceDelete.onclick = () => {
     E.deviceDeleteConfirm.hidden = false;
+    E.deviceDelete.setAttribute('aria-expanded', 'true');
     E.deviceDeleteConfirmButton.focus({ preventScroll: true });
   };
-  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; E.deviceDelete.focus({ preventScroll: true }); };
+  E.deviceDeleteCancel.onclick = () => { E.deviceDeleteConfirm.hidden = true; E.deviceDelete.setAttribute('aria-expanded', 'false'); E.deviceDelete.focus({ preventScroll: true }); };
   E.deviceDeleteConfirmButton.onclick = deleteDeviceEvidence;
 
   E.actionTarget.onchange = () => {
@@ -245,8 +247,8 @@ function bind() {
   E.actionDiscard.onclick = () => discardActionApproval('message.actionsReviewDiscarded');
   E.actionRefresh.onclick = () => refreshActionRuns();
   E.actionCancel.onclick = cancelActionRun;
-  E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
-  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; E.actionDelete.focus({ preventScroll: true }); };
+  E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDelete.setAttribute('aria-expanded', 'true'); E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
+  E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; E.actionDelete.setAttribute('aria-expanded', 'false'); E.actionDelete.focus({ preventScroll: true }); };
   E.actionDeleteConfirmButton.onclick = deleteActionRun;
   E.agentSource.onchange = discardAgentPreview;
   E.agentIntent.onchange = discardAgentPreview;
