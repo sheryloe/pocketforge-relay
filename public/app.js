@@ -392,6 +392,7 @@ function render() {
   E.cancel.hidden = LOCAL_TERMINAL.has(job.status);
   E.jobDelete.hidden = !LOCAL_TERMINAL.has(job.status);
   E.jobDeleteConfirm.hidden = true;
+  E.jobDelete.setAttribute('aria-expanded', 'false');
   renderMeta(E.meta, [
     `job=${short(job.id)}`,
     `source=${job.sourceType}`,
@@ -506,6 +507,7 @@ function clearSelectedJob() {
   E.cancel.hidden = true;
   E.jobDelete.hidden = true;
   E.jobDeleteConfirm.hidden = true;
+  E.jobDelete.setAttribute('aria-expanded', 'false');
   E.meta.replaceChildren();
   renderLogs(E.console, [], t('local.consoleEmpty'));
   renderArtifacts(E.artifacts, E.count, [], () => {}, 'message.artifactsAfterRun');
@@ -947,6 +949,7 @@ function renderDeviceAction() {
   E.deviceActionError.hidden = !actionError;
   E.deviceActionError.textContent = actionError;
   E.deviceDeleteConfirm.hidden = true;
+  E.deviceDelete.setAttribute('aria-expanded', 'false');
   renderDeviceEvidence(action);
   renderDeviceApproval(action);
 }
@@ -1027,6 +1030,7 @@ async function deleteDeviceEvidence() {
     state.device.actions = state.device.actions.filter(candidate => candidate.id !== action.id);
     if (state.device.active?.id === action.id) state.device.active = null;
     E.deviceDeleteConfirm.hidden = true;
+    E.deviceDelete.setAttribute('aria-expanded', 'false');
     renderDeviceActions();
     renderDeviceAction();
     msgKey(E.deviceMessage, 'message.deviceEvidenceDeleted', 'success');
@@ -1308,6 +1312,7 @@ function renderActionRun() {
   E.actionCancel.hidden = ACTION_TERMINAL.has(run.status);
   E.actionDelete.hidden = !ACTION_TERMINAL.has(run.status);
   E.actionDeleteConfirm.hidden = true;
+  E.actionDelete.setAttribute('aria-expanded', 'false');
   E.actionCancel.disabled = state.actions.refreshing || run.cancelRequested;
   E.actionCancel.textContent = t(run.cancelRequested ? 'common.cancelRequested' : 'common.cancel');
   setExternalRunUrl(run.remoteUrl);
@@ -1389,6 +1394,7 @@ async function deleteActionRun() {
     state.actions.runs = state.actions.runs.filter(candidate => candidate.id !== run.id);
     state.actions.active = null;
     E.actionDeleteConfirm.hidden = true;
+    E.actionDelete.setAttribute('aria-expanded', 'false');
     renderActionRuns(); renderActionRun(); populateAgentSources();
     msgKey(E.actionMessage, 'message.actionsDeleted', 'success');
   } catch (error) { msgRaw(E.actionMessage, error.message, 'error'); }

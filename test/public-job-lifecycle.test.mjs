@@ -23,4 +23,5 @@ test('local job deletion requires a visible irreversible confirmation and fixed 
   assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
   assert.match(script, /state\.jobs = state\.jobs\.filter\(candidate => candidate\.id !== job\.id\)/);
   assert.match(script, /E\.jobDeleteCancel\.onclick = \(\) => \{ E\.jobDeleteConfirm\.hidden = true; E\.jobDelete\.setAttribute\('aria-expanded', 'false'\); E\.jobDelete\.focus/);
+  assert.match(script, /E\.jobDeleteConfirm\.hidden = true;\s+E\.jobDelete\.setAttribute\('aria-expanded', 'false'\);/);
 });

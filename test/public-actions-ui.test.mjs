@@ -53,4 +53,5 @@ test('Actions deletion is terminal-only and requires visible irreversible confir
   assert.match(script, /E\.actionDelete\.hidden = !ACTION_TERMINAL\.has\(run\.status\)/);
   assert.match(script, /method: 'DELETE', body: JSON\.stringify\(\{ decision: 'delete' \}\)/);
   assert.match(script, /E\.actionDeleteCancel\.onclick = \(\) => \{ E\.actionDeleteConfirm\.hidden = true; E\.actionDelete\.setAttribute\('aria-expanded', 'false'\); E\.actionDelete\.focus/);
+  assert.match(script, /E\.actionDeleteConfirm\.hidden = true;\s+E\.actionDelete\.setAttribute\('aria-expanded', 'false'\);/);
 });
