@@ -25,3 +25,9 @@ test('local job deletion requires a visible irreversible confirmation and fixed 
   assert.match(script, /E\.jobDeleteCancel\.onclick = \(\) => \{ E\.jobDeleteConfirm\.hidden = true; E\.jobDelete\.setAttribute\('aria-expanded', 'false'\); E\.jobDelete\.focus/);
   assert.match(script, /E\.jobDeleteConfirm\.hidden = true;\s+E\.jobDelete\.setAttribute\('aria-expanded', 'false'\);/);
 });
+
+test('Escape closes the active deletion confirmation through its cancel path', () => {
+  assert.match(script, /event\.key !== 'Escape'/);
+  for (const pair of ['jobDeleteConfirm, E.jobDeleteCancel','deviceDeleteConfirm, E.deviceDeleteCancel','actionDeleteConfirm, E.actionDeleteCancel']) assert.match(script,new RegExp(pair.replaceAll('.', '\\.')));
+  assert.match(script, /event\.preventDefault\(\); open\[1\]\.click\(\)/);
+});

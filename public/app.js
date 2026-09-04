@@ -250,6 +250,11 @@ function bind() {
   E.actionDelete.onclick = () => { E.actionDeleteConfirm.hidden = false; E.actionDelete.setAttribute('aria-expanded', 'true'); E.actionDeleteConfirmButton.focus({ preventScroll: true }); };
   E.actionDeleteCancel.onclick = () => { E.actionDeleteConfirm.hidden = true; E.actionDelete.setAttribute('aria-expanded', 'false'); E.actionDelete.focus({ preventScroll: true }); };
   E.actionDeleteConfirmButton.onclick = deleteActionRun;
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    const open = [[E.jobDeleteConfirm, E.jobDeleteCancel], [E.deviceDeleteConfirm, E.deviceDeleteCancel], [E.actionDeleteConfirm, E.actionDeleteCancel]].find(([panel]) => !panel.hidden);
+    if (open) { event.preventDefault(); open[1].click(); }
+  });
   E.agentSource.onchange = discardAgentPreview;
   E.agentIntent.onchange = discardAgentPreview;
   E.agentForm.onsubmit = reviewAgentEvidence;
